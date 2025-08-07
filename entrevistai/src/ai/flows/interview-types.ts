@@ -4,14 +4,14 @@ import { z } from "zod";
 // Para iniciar a entrevista
 export const StartInterviewInputSchema = z.object({
   jobRole: z.string(),
-  techStack: z.string(),
+  professionalArea: z.string(),
 });
 export type StartInterviewInput = z.infer<typeof StartInterviewInputSchema>;
 
 // Para continuar a conversa
 export const ContinueInterviewInputSchema = z.object({
   jobRole: z.string(),
-  techStack: z.string(),
+  professionalArea: z.string(),
   conversationHistory: z.array(
     z.object({
       role: z.enum(["user", "assistant"]),

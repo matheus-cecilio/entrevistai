@@ -8,7 +8,7 @@ Simulador de entrevistas técnicas com IA.
    ```
    npm install
    ```
-2. Crie um arquivo `.env.local` com as variáveis:
+2. Crie um arquivo `.env` com as variáveis de ambiente:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `OPENROUTER_API_KEY`

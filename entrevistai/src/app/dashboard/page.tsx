@@ -22,7 +22,7 @@ type Interview = {
   id: string
   created_at: string
   job_role: string
-  tech_stack: string
+  professional_area: string
   average_score: number
   overall_feedback: string
   results: {
@@ -36,7 +36,7 @@ type Interview = {
 }
 
 export default async function DashboardPage() {
-  const supabase = createClient()
+  const supabase = await createClient()
 
   const {
     data: { user },
@@ -109,8 +109,8 @@ export default async function DashboardPage() {
                       )}
                     </CardDescription>
                      <div className="mt-2 flex flex-wrap gap-2">
-                        {interview.tech_stack.split(',').map(tech => (
-                            <Badge key={tech.trim()} variant="secondary">{tech.trim()}</Badge>
+                        {interview.professional_area.split(',').map(area => (
+                            <Badge key={area.trim()} variant="secondary">{area.trim()}</Badge>
                         ))}
                     </div>
                   </div>

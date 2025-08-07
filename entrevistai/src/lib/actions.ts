@@ -11,7 +11,7 @@ import {
   type StartInterviewInput,
   type ContinueInterviewInput,
 } from "@/ai/flows/interview-types";
-import { type InterviewResult } from "../app/page"; // Importando o tipo do page.tsx
+import { type InterviewResult } from "@/types/interview";
 
 /**
  * Action para iniciar a entrevista e obter a primeira pergunta.
@@ -50,7 +50,7 @@ export async function submitAnswerAction(input: ContinueInterviewInput) {
 // Interface para o input da action final
 interface FinishInterviewActionInput {
   jobRole: string;
-  techStack: string;
+  professionalArea: string;
   conversationHistory: ContinueInterviewInput['conversationHistory'];
   finalResults: InterviewResult[]; // Array com os resultados completos
   userId: string;
@@ -58,12 +58,12 @@ interface FinishInterviewActionInput {
 
 export async function finishInterviewAction(input: FinishInterviewActionInput) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // 1. Obter o feedback final e a avaliação da última resposta da IA
     const aiResult = await endInterview({
       jobRole: input.jobRole,
-      techStack: input.techStack,
+      professionalArea: input.professionalArea,
       conversationHistory: input.conversationHistory,
     });
 
@@ -75,7 +75,7 @@ export async function finishInterviewAction(input: FinishInterviewActionInput) {
     const interviewData = {
       user_id: input.userId,
       job_role: input.jobRole,
-      tech_stack: input.techStack,
+      professional_area: input.professionalArea,
       results: input.finalResults, // Salva o JSON completo com P/R, feedback e scores
       overall_feedback: aiResult.overallFeedback,
       average_score: averageScore,

@@ -28,7 +28,7 @@ const model = openrouter("openrouter/horizon-beta");
 export async function startInterview(
   input: StartInterviewInput
 ): Promise<InterviewOutput> {
-  const systemPrompt = `Você é um entrevistador especialista conduzindo uma entrevista em Português do Brasil para uma vaga de ${input.jobRole} com foco em ${input.techStack}.
+  const systemPrompt = `Você é um entrevistador especialista conduzindo uma entrevista em Português do Brasil para uma vaga de ${input.jobRole} na área de atuação: ${input.professionalArea}.
   Sua tarefa é gerar APENAS um objeto JSON contendo a primeira pergunta da entrevista, seja conciso fazendo uma pergunta que são frequentes em entrevistas dessa área.
   A pergunta DEVE estar em Português do Brasil.
   NÃO inclua nenhum texto introdutório, markdown, ou qualquer coisa fora do objeto JSON.
@@ -64,7 +64,7 @@ export async function continueInterview(
   input: ContinueInterviewInput
 ): Promise<InterviewOutput> {
   // --- MUDANÇA AQUI: O prompt foi simplificado ---
-  const systemPrompt = `Você é um entrevistador especialista conduzindo uma entrevista em Português do Brasil para uma vaga de ${input.jobRole} (foco: ${input.techStack}).
+  const systemPrompt = `Você é um entrevistador especialista conduzindo uma entrevista em Português do Brasil para uma vaga de ${input.jobRole} (área de atuação: ${input.professionalArea}).
 O usuário acabou de responder sua última pergunta.
 Sua tarefa é gerar APENAS um objeto JSON com o próximo passo da entrevista. O conteúdo do JSON (feedback e a nova pergunta) DEVE estar em Português do Brasil.
 NÃO inclua nenhum texto fora do objeto JSON.
@@ -73,7 +73,7 @@ O JSON deve seguir estritamente este formato: { "question": string, "feedback": 
 Instruções para os valores do JSON:
 1. "feedback": Forneça um feedback conciso e construtivo em português sobre a última resposta do usuário.
 2. "score": Atribua uma nota de 0 a 100 para essa resposta.
-3. "question": Elabore a próxima pergunta relevante da entrevista, em português.
+3. "question": Elabore a próxima pergunta relevante da entrevista, variando o tema em relação às perguntas anteriores, evitando repetições. Foque em perguntas frequentes em entrevistas para empresas grandes e boas, mas sem ser muito específico. Seja conciso, como um entrevistador experiente, e escreva em português.
 4. "isFinalQuestion": Apenas defina este valor como 'false'. A lógica de finalização será controlada pelo aplicativo.`;
 
   const history: CoreMessage[] = input.conversationHistory.map((turn) => ({
@@ -109,13 +109,13 @@ Instruções para os valores do JSON:
 export async function endInterview(
   input: ContinueInterviewInput
 ): Promise<FinalOutput> {
-  const lastAnswerPrompt = `Você é um entrevistador especialista. O usuário acabou de dar sua resposta final para uma vaga de ${input.jobRole} (foco: ${input.techStack}).
+  const lastAnswerPrompt = `Você é um entrevistador especialista. O usuário acabou de dar sua resposta final para uma vaga de ${input.jobRole} (área de atuação: ${input.professionalArea}).
 Sua tarefa é gerar APENAS um objeto JSON com o feedback e a nota para esta última resposta.
 O conteúdo do JSON (feedback) DEVE estar em Português do Brasil.
 NÃO inclua nenhum texto fora do objeto JSON.
 O JSON deve seguir estritamente este formato: { "feedback": string, "score": number }.`;
 
-  const overallFeedbackPrompt = `Você é um analisador e avaliador de carreira especialista. O usuário acabou de completar uma entrevista simulada para ${input.jobRole} (foco: ${input.techStack}).
+  const overallFeedbackPrompt = `Você é um analisador e avaliador de carreira especialista. O usuário acabou de completar uma entrevista simulada para ${input.jobRole} (área de atuação: ${input.professionalArea}).
 Analise o histórico completo da conversa e forneça um feedback geral, construtivo e encorajador em Português do Brasil.
 Sua tarefa é gerar APENAS um objeto JSON contendo este feedback.
 O JSON deve seguir estritamente este formato: { "summary": "Seu parágrafo de feedback geral aqui." }.`;
