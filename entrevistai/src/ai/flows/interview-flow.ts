@@ -20,7 +20,7 @@ const openrouter = createOpenRouter({
 });
 
 // Modelo de IA a ser usado
-const model = openrouter("openrouter/horizon-beta");
+const model = openrouter("openai/gpt-oss-20b:free");
 
 /**
  * Gera a primeira pergunta da entrevista.

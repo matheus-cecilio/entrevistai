@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, BookCheck } from 'lucide-react'
+import { ArrowLeft, BookCheck, Settings, Home } from 'lucide-react'
 import Link from 'next/link'
 import {
   Accordion,
@@ -17,6 +17,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { getProfile } from '@/lib/profile-actions'
+import { Suspense } from 'react'
 
 type Interview = {
   id: string
@@ -46,6 +49,10 @@ export default async function DashboardPage() {
     return redirect('/login')
   }
 
+  // Buscar perfil do usuário
+  const profileResult = await getProfile(user.id);
+  const profile = profileResult.success ? profileResult.data : null;
+
   const { data: interviews, error } = await supabase
     .from('interviews')
     .select('*')
@@ -60,6 +67,18 @@ export default async function DashboardPage() {
     )
   }
 
+  const getInitials = (name: string) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
+      .substring(0, 2)
+      .toUpperCase();
+  };
+
+  const displayName = profile?.full_name || user.email?.split("@")[0] || "Usuário";
+
   const getScoreColor = (score: number) => {
     if (score >= 80) return "bg-green-100 text-green-800 border-green-200";
     if (score >= 50) return "bg-yellow-100 text-yellow-800 border-yellow-200";
@@ -72,24 +91,67 @@ export default async function DashboardPage() {
     return "text-red-500";
   };
 
+  // Formata feedback geral inserindo quebras de linha em marcadores comuns
+  const formatOverallFeedback = (text: string) => {
+    if (!text) return text;
+    let t = text;
+    // Normalizações leves
+    t = t.replace(/\r\n/g, '\n');
+    // 1) Quebra após ponto-e-vírgula
+    t = t.replace(/;\s*/g, ';\n');
+    // 2) Destacar seções/orientadores comuns
+    t = t.replace(
+      /(Pontos fortes:|O que pode evoluir:|Sugestões práticas?:|Para evoluir,|No aspecto colaborativo,|Foi positivo ver|Sua visão crítica|No geral,)/g,
+      '\n\n$1'
+    );
+    // 3) Listas com "1) ... 2) ..."
+    t = t.replace(/\s*(\d+)\)\s*/g, '\n$1) ');
+    // 4) Transformar traços em bullets quando usados como itens
+    t = t.replace(/(?:^|\s)[-–]\s/g, '\n- ');
+    // 5) Quebrar linhas após final de frase (., !, :) seguidas de letra maiúscula
+    t = t.replace(/([\.!?:])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ])/g, '$1\n');
+    // 6) Limpeza de múltiplas quebras
+    t = t.replace(/\n{3,}/g, '\n\n');
+    return t.trim();
+  };
+
 
   return (
     <div className="min-h-screen bg-secondary">
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md">
         <div className="container mx-auto flex h-16 max-w-5xl items-center justify-between border-b px-4">
-          <h1 className="flex items-center gap-2 text-xl font-bold">
-            <BookCheck className="text-primary" />
-            <span>Histórico de Entrevistas</span>
-          </h1>
-          <Button asChild variant="outline">
-            <Link href="/">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Voltar para Entrevista
-            </Link>
-          </Button>
+          <div className="flex items-center gap-3">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={profile?.avatar_url || undefined} alt={displayName} />
+              <AvatarFallback className="text-sm">
+                {getInitials(displayName)}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-sm text-muted-foreground">
+                <BookCheck className="text-primary" />
+                Histórico de Entrevistas do {displayName}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline">
+              <Link href="/profile" prefetch={true}>
+                <Settings className="mr-2 h-4 w-4" />
+                Perfil
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/" prefetch={true}>
+                <Home className="mr-2 h-4 w-4" />
+                Início
+              </Link>
+            </Button>
+          </div>
         </div>
       </header>
       <main className="container mx-auto max-w-5xl p-4">
+        {/* Histórico de entrevistas */}
         {interviews && interviews.length > 0 ? (
           <div className="grid gap-6">
             {(interviews as Interview[]).map((interview) => (
@@ -109,7 +171,9 @@ export default async function DashboardPage() {
                       )}
                     </CardDescription>
                      <div className="mt-2 flex flex-wrap gap-2">
-                        {interview.professional_area.split(',').map(area => (
+                        {(typeof interview.professional_area === 'string' && interview.professional_area.trim() !== ''
+                          ? interview.professional_area.split(',')
+                          : []).map(area => (
                             <Badge key={area.trim()} variant="secondary">{area.trim()}</Badge>
                         ))}
                     </div>
@@ -123,8 +187,8 @@ export default async function DashboardPage() {
                   <Accordion type="single" collapsible className="w-full">
                      <AccordionItem value="overall">
                         <AccordionTrigger className="text-lg font-semibold">Feedback Geral</AccordionTrigger>
-                        <AccordionContent className="pt-2 text-base text-muted-foreground">
-                            {interview.overall_feedback}
+            <AccordionContent className="pt-2 text-base text-muted-foreground whitespace-pre-line leading-relaxed">
+              {formatOverallFeedback(interview.overall_feedback)}
                         </AccordionContent>
                      </AccordionItem>
                      <AccordionItem value="details">

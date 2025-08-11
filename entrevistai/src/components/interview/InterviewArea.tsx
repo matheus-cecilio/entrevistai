@@ -2,7 +2,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Timer, LoaderCircle } from "lucide-react";
+import { Timer, LoaderCircle, Brain } from "lucide-react";
 import type { EvaluationResult } from "@/types/interview";
 import { FeedbackDisplay } from "./FeedbackDisplay";
 
@@ -71,18 +71,33 @@ export const InterviewArea = ({
                   onChange={(e) => setCurrentAnswer(e.target.value)}
                   disabled={isLoading}
                 />
-                <Button
-                  onClick={onSubmit}
-                  disabled={isLoading || !currentAnswer.trim()}
-                >
-                  {isLoading ? (
-                    <LoaderCircle className="animate-spin" />
-                  ) : isFinalQuestion ? (
-                    "Enviar e Terminar"
-                  ) : (
-                    "Enviar Resposta"
-                  )}
-                </Button>
+                
+                {isLoading ? (
+                  <Card className="bg-primary/5 border-primary/20">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3 text-center">
+                        <Brain className="h-5 w-5 text-primary animate-pulse" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-primary">
+                            IA analisando sua resposta...
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Aguarde alguns segundos enquanto processamos e preparamos o feedback
+                          </p>
+                        </div>
+                        <LoaderCircle className="h-5 w-5 animate-spin text-primary" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Button
+                    onClick={onSubmit}
+                    disabled={!currentAnswer.trim()}
+                    className="w-full"
+                  >
+                    {isFinalQuestion ? "Enviar e Terminar" : "Enviar Resposta"}
+                  </Button>
+                )}
               </div>
             )}
           </>

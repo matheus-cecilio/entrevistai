@@ -8,7 +8,13 @@ import { Briefcase, Layers, Sparkles, LoaderCircle } from "lucide-react";
 import type { ProfileFormData } from "@/types/interview";
 import { esquemaPerfil } from "@/types/interview";
 
-export const ProfileSetup = ({ onStart, isLoading }: { onStart: (data: ProfileFormData) => void; isLoading: boolean }) => {
+interface ProfileSetupProps {
+  onStart: (data: ProfileFormData) => void;
+  isLoading: boolean;
+  userName?: string;
+}
+
+export const ProfileSetup = ({ onStart, isLoading, userName }: ProfileSetupProps) => {
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(esquemaPerfil),
     defaultValues: { jobRole: "", professionalArea: "" },
@@ -22,7 +28,11 @@ export const ProfileSetup = ({ onStart, isLoading }: { onStart: (data: ProfileFo
         </div>
         <CardTitle className="text-3xl font-bold">EntrevistAI</CardTitle>
         <CardDescription className="text-lg">
-          Aprimore suas habilidades com uma entrevista conversacional baseada em IA.
+          {userName ? (
+            <>Olá, <span className="font-semibold text-foreground">{userName}</span>! Aprimore suas habilidades com uma entrevista conversacional baseada em IA.</>
+          ) : (
+            "Aprimore suas habilidades com uma entrevista conversacional baseada em IA."
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>

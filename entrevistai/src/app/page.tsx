@@ -6,26 +6,13 @@ import { useState, useEffect, Suspense } from "react";
 import { ResultsScreen } from "@/components/interview/ResultsScreen";
 import { ProfileSetup } from "@/components/interview/ProfileSetup";
 import { InterviewArea } from "@/components/interview/InterviewArea";
+import { UserHeader } from "@/components/user/UserHeader";
+import { LoadingState } from "@/components/ui/loading-state";
+import { AILoading } from "@/components/ui/ai-loading";
 import { ProfileFormData, EvaluationResult, InterviewResult, CoreMessage } from "@/types/interview";
-import {
-  LoaderCircle,
-  LogOut,
-  LayoutDashboard,
-  User,
-} from "lucide-react";
+import { LoaderCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { type User as SupabaseUser } from "@supabase/supabase-js";
-import { logout } from "./login/actions";
-import Link from "next/link";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -39,9 +26,11 @@ import {
   submitAnswerAction,
   finishInterviewAction,
 } from "@/lib/actions";
+import { Button } from "@/components/ui/button";
+import { useUserProfile } from "@/hooks/use-user-profile";
 
-// --- Tipos e Esquemas agora em src/types/interview.ts ---
-type AppStep = "profile" | "interview" | "results";
+// --- Tipos e Esquemas em src/types/interview.ts ---
+type AppStep = "profile" | "interview" | "results" | "loading-ai";
 
 // --- Constantes ---
 const INTERVIEW_DURATION = 15 * 60; // 15 minutos
@@ -49,6 +38,7 @@ const INTERVIEW_DURATION = 15 * 60; // 15 minutos
 function PageContent() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const { profile } = useUserProfile(user);
 
   const [step, setStep] = useState<AppStep>("profile");
   const [isLoading, setIsLoading] = useState(false);
@@ -101,22 +91,37 @@ function PageContent() {
   const handleStartInterview = async (data: ProfileFormData) => {
     setIsLoading(true);
     setJobDetails(data);
-    const result = await startInterviewAction(data);
+    
+    // Mostrar tela de loading da IA
+    setStep("loading-ai");
+    
+    try {
+      const result = await startInterviewAction(data);
 
-    if (result.success && result.data) {
-      const firstQuestion = result.data.question;
-      setCurrentQuestion(firstQuestion);
-      setConversationHistory([{ role: "assistant", content: firstQuestion }]);
-      setStep("interview");
-      setTimeLeft(INTERVIEW_DURATION);
-    } else {
+      if (result.success && result.data) {
+        const firstQuestion = result.data.question;
+        setCurrentQuestion(firstQuestion);
+        setConversationHistory([{ role: "assistant", content: firstQuestion }]);
+        setStep("interview");
+        setTimeLeft(INTERVIEW_DURATION);
+      } else {
+        setStep("profile"); // Volta para o profile em caso de erro
+        toast({
+          variant: "destructive",
+          title: "Erro ao iniciar entrevista",
+          description: result.error || "Tente novamente mais tarde ou revise os dados informados.",
+        });
+      }
+    } catch (error) {
+      setStep("profile");
       toast({
         variant: "destructive",
-        title: "Erro ao iniciar entrevista",
-        description: result.error || "Tente novamente mais tarde ou revise os dados informados.",
+        title: "Erro inesperado",
+        description: "Falha na comunicação com a IA. Tente novamente.",
       });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const handleFinishInterview = async () => {
@@ -277,14 +282,27 @@ function PageContent() {
     setInterviewResults([]);
     setIsFinalQuestion(false);
     setOverallFeedback(null);
+    setShowGeneralFeedback(false);
     setTimeLeft(INTERVIEW_DURATION);
   };
 
   const renderContent = () => {
     switch (step) {
       case "profile":
+        const displayName = profile?.full_name || user?.email?.split("@")[0] || undefined;
         return (
-          <ProfileSetup onStart={handleStartInterview} isLoading={isLoading} />
+          <ProfileSetup 
+            onStart={handleStartInterview} 
+            isLoading={isLoading} 
+            userName={displayName}
+          />
+        );
+      case "loading-ai":
+        return (
+          <AILoading 
+            message="Preparando sua entrevista personalizada..."
+            estimatedTime={8}
+          />
         );
       case "interview":
         return (
@@ -322,8 +340,29 @@ function PageContent() {
                   <Progress value={finalEvaluation.score} className="h-3 [&>div]:bg-primary" />
                 </div>
                 <p className="text-muted-foreground">{finalEvaluation.feedback}</p>
+                
+                {isGettingGeneralFeedback && (
+                  <Card className="bg-blue-50 border-blue-200">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 text-blue-700">
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                        <span className="text-sm">
+                          A IA está analisando toda sua entrevista para gerar um feedback completo...
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+                
                 <Button onClick={handleShowGeneralFeedback} disabled={isGettingGeneralFeedback} className="w-full mt-4">
-                  {isGettingGeneralFeedback ? <LoaderCircle className="animate-spin" /> : "Ver Feedback Geral"}
+                  {isGettingGeneralFeedback ? (
+                    <div className="flex items-center gap-2">
+                      <LoaderCircle className="h-4 w-4 animate-spin" />
+                      <span>Gerando feedback geral...</span>
+                    </div>
+                  ) : (
+                    "Ver Feedback Geral"
+                  )}
                 </Button>
               </CardContent>
             </Card>
@@ -345,8 +384,10 @@ function PageContent() {
   if (authLoading) {
     return (
       <div className="flex min-h-screen w-full flex-col items-center justify-center p-4">
-        <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
-        <p className="mt-4 text-muted-foreground">Verificando sua sessão...</p>
+        <LoadingState 
+          title="Verificando sua sessão..."
+          message="Aguarde enquanto carregamos suas informações"
+        />
       </div>
     );
   }
@@ -354,7 +395,7 @@ function PageContent() {
   return (
     <main className="flex min-h-screen w-full flex-col items-center justify-center p-4 sm:p-6 md:p-8">
       <div className="w-full max-w-4xl">
-        {user && <Header user={user} />}
+        {user && <UserHeader user={user} />}
         <Card className="shadow-2xl">{renderContent()}</Card>
       </div>
     </main>
@@ -364,53 +405,16 @@ function PageContent() {
 // Componente Wrapper para Suspense
 export default function AIInterviewPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={
+      <div className="flex min-h-screen w-full flex-col items-center justify-center p-4">
+        <LoadingState 
+          title="Carregando EntrevistAI..."
+          message="Preparando a melhor experiência de entrevista para você"
+          showCard={true}
+        />
+      </div>
+    }>
       <PageContent />
     </Suspense>
   );
 }
-
-const Header = ({ user }: { user: SupabaseUser }) => {
-  return (
-    <header className="mb-4 flex items-center justify-between rounded-lg border bg-card p-2">
-      <div className="text-sm text-muted-foreground">
-        Logado como:{" "}
-        <span className="font-semibold text-foreground">{user.email}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <Link href="/dashboard">
-          <Button variant="ghost" size="sm">
-            <LayoutDashboard className="mr-2 h-4 w-4" />
-            Histórico
-          </Button>
-        </Link>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="h-8 w-8">
-              <User className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/dashboard" className="w-full cursor-pointer">
-                <LayoutDashboard className="mr-2 h-4 w-4" />
-                <span>Histórico</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <form action={logout} className="w-full">
-              <DropdownMenuItem asChild>
-                <button className="w-full cursor-pointer">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sair</span>
-                </button>
-              </DropdownMenuItem>
-            </form>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </header>
-  );
-};
