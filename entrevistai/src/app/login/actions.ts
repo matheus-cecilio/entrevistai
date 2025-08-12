@@ -14,10 +14,25 @@ export async function login(formData: FormData) {
     password: formData.get('password') as string,
   }
 
+  // Validação básica antes de chamar o Supabase
+  if (!data.email || !data.password) {
+    return redirect('/login?message=' + encodeURIComponent('Email e senha são obrigatórios.'))
+  }
+
   const { error } = await supabase.auth.signInWithPassword(data)
 
   if (error) {
-    return redirect(`/login?message=Could not authenticate user. ${error.message}`)
+    console.error('Login error:', error)
+    
+    if (error.message?.includes('Invalid login credentials')) {
+      return redirect('/login?message=' + encodeURIComponent('Email ou senha incorretos. Verifique seus dados.'))
+    }
+    
+    if (error.message?.includes('Email not confirmed')) {
+      return redirect('/login?message=' + encodeURIComponent('Email não confirmado. Verifique sua caixa de entrada.'))
+    }
+    
+    return redirect('/login?message=' + encodeURIComponent(`Erro ao fazer login: ${error.message}`))
   }
 
   revalidatePath('/', 'layout')
@@ -32,14 +47,38 @@ export async function signup(formData: FormData) {
     password: formData.get('password') as string,
   }
 
+  // Validação básica antes de chamar o Supabase
+  if (!data.email || !data.password) {
+    return redirect('/signup?message=' + encodeURIComponent('Email e senha são obrigatórios.'))
+  }
+
+  if (data.password.length < 6) {
+    return redirect('/signup?message=' + encodeURIComponent('Senha deve ter pelo menos 6 caracteres.'))
+  }
+
   const { error } = await supabase.auth.signUp(data)
 
   if (error) {
     console.error(error)
-    return redirect('/login?message=Could not authenticate user')
+    
+    // Tratamento específico para diferentes tipos de erro
+    if (error.message?.includes('User already registered') || error.message?.includes('already registered')) {
+      return redirect('/signup?message=' + encodeURIComponent('Este email já está cadastrado. Tente fazer login ou use outro email.'))
+    }
+    
+    if (error.message?.includes('Invalid email')) {
+      return redirect('/signup?message=' + encodeURIComponent('Email inválido. Verifique o formato do email.'))
+    }
+    
+    if (error.message?.includes('Password')) {
+      return redirect('/signup?message=' + encodeURIComponent('Senha fraca. Use pelo menos 6 caracteres com letras e números.'))
+    }
+    
+    // Erro genérico
+    return redirect('/signup?message=' + encodeURIComponent('Erro ao criar conta. Verifique os dados e tente novamente.'))
   }
 
-  return redirect('/login?message=Check email to continue sign in process')
+  return redirect('/login?message=' + encodeURIComponent('Conta criada! Faça login!.'))
 }
 
 export async function loginWithProvider(provider: 'google' | 'github') {

@@ -21,7 +21,6 @@
 - �🔐 **Autenticação Segura**: Login via email/senha ou OAuth (Google/GitHub)
 - 📱 **Interface Responsiva**: Design moderno que funciona em todos os dispositivos
 - ⏱️ **Limite de Tempo**: Simula pressão real de entrevista com timer de 15 minutos
-- 🌍 **Português Brasileiro**: Toda a experiência em português nativo
 
 ## Demo
 
@@ -56,7 +55,7 @@
 ## ⚙️ Instalação e Configuração
 
 ### Pré-requisitos
-- Node.js 18+ 
+- Node.js 18+ - O projeto usa recursos que não estão disponíveis em versões anteriores.
 - npm ou yarn
 - Conta no Supabase
 - Chave API do OpenRouter
@@ -168,9 +167,10 @@ src/
 │   └── auth/callback/  # Callback OAuth
 ├── components/
 │   ├── interview/      # Componentes específicos da entrevista
-│   │   ├── ProfileSetup.tsx
-│   │   ├── InterviewArea.tsx
 │   │   ├── FeedbackDisplay.tsx
+│   │   ├── Header.tsx
+│   │   ├── InterviewArea.tsx
+│   │   ├── ProfileSetup.tsx
 │   │   └── ResultsScreen.tsx
 │   ├── profile/        # Componentes de perfil
 │   │   └── ProfileForm.tsx
@@ -217,7 +217,7 @@ O projeto suporta múltiplos métodos de autenticação:
 
 ### Tabela `profiles`
 - `id`: UUID referenciando auth.users
-- `full_name`: Nome completo do usuário
+- `full_name`: Nome do usuário
 - `avatar_url`: URL da foto de perfil
 - `updated_at`: Data de última atualização
 

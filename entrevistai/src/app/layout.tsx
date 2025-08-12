@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google"; // 1. Importar a fonte
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
 // 2. Instanciar a fonte
 const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-inter", // 3. Criar uma variável CSS para o Tailwind
+  variable: "--font-inter", // Criar uma variável CSS para o Tailwind
 });
 
 export const metadata: Metadata = {
@@ -20,9 +20,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} dark`}>
+    <html lang="pt-BR" className={`${inter.variable} dark`}>
       <head>{}</head>
-      <body className="font-body antialiased">{children}</body>
+      <body className="font-body antialiased">
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

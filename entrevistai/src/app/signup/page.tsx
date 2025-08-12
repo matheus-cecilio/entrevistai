@@ -5,9 +5,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useOptimizedNavigation } from "@/hooks/use-optimized-navigation";
 
-export default async function SignupPage() {
-  const message = useSearchParams().get("message");
+function SignupForm() {
+  const searchParams = useSearchParams();
+  const encodedMessage = searchParams?.get("message");
+  const message = encodedMessage ? decodeURIComponent(encodedMessage) : null;
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { preloadRoute } = useOptimizedNavigation();
+
+  // Preload da página de login
+  const handlePreload = () => {
+    preloadRoute('/login');
+  };
+
+  const handleSubmit = async (formData: FormData) => {
+    setIsSubmitting(true);
+    try {
+      await signup(formData);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-background">
       <div className="w-full max-w-sm rounded-lg border border-border bg-card p-8 shadow-lg">
@@ -17,7 +38,7 @@ export default async function SignupPage() {
             Comece sua jornada no EntrevistAI.
           </p>
         </div>
-        <form className="flex w-full flex-1 flex-col justify-center gap-2 text-foreground">
+        <form action={handleSubmit} className="flex w-full flex-1 flex-col justify-center gap-2 text-foreground">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -25,6 +46,7 @@ export default async function SignupPage() {
               name="email"
               placeholder="you@example.com"
               required
+              disabled={isSubmitting}
             />
           </div>
           <div className="space-y-2">
@@ -35,17 +57,37 @@ export default async function SignupPage() {
               name="password"
               placeholder="••••••••"
               required
+              disabled={isSubmitting}
             />
           </div>
 
-          <Button formAction={signup} variant="default" className="mt-4 w-full">
-            Cadastrar-se
+          <Button 
+            type="submit" 
+            variant="default" 
+            className="mt-4 w-full"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Criando conta..." : "Cadastrar-se"}
           </Button>
 
           {message && (
-            <p className="mt-4 p-4 bg-foreground/10 text-foreground text-center">
+            <div className={`mt-4 p-4 rounded-md text-center text-sm ${
+              message.includes('criada') || message.includes('Verifique seu email') 
+                ? 'bg-green-50 text-green-700 border border-green-200' 
+                : 'bg-red-50 text-red-700 border border-red-200'
+            }`}>
               {message}
-            </p>
+              {message.includes('já está cadastrado') && (
+                <div className="mt-3">
+                  <Link
+                    href="/login"
+                    className="inline-block px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    Ir para Login
+                  </Link>
+                </div>
+              )}
+            </div>
           )}
         </form>
         <p className="mt-6 text-center text-sm">
@@ -53,11 +95,27 @@ export default async function SignupPage() {
           <Link
             href="/login"
             className="font-semibold text-primary hover:underline"
+            prefetch={true}
+            onMouseEnter={handlePreload}
           >
             Faça Login
           </Link>
         </p>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen w-full items-center justify-center bg-background">
+        <div className="text-center">
+          <p>Carregando...</p>
+        </div>
+      </div>
+    }>
+      <SignupForm />
+    </Suspense>
   );
 }
