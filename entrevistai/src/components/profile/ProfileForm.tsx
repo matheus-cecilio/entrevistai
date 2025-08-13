@@ -13,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { LoaderCircle, Save, User } from "lucide-react";
 import { updateProfileSchema, type UpdateProfileData, type Profile } from "@/types/profile";
 import { updateProfile } from "@/lib/profile-actions";
+import { DeleteAccountButton } from "@/components/profile/DeleteAccountButton";
+import { Separator } from "@/components/ui/separator";
 
 interface ProfileFormProps {
   profile: Profile;
@@ -74,92 +76,113 @@ export function ProfileForm({ profile, userId }: ProfileFormProps) {
   };
 
   return (
-    <Card className="max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <User className="h-5 w-5" />
-          Editar Perfil
-        </CardTitle>
-        <CardDescription>
-          Atualize suas informações pessoais
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {/* Preview do Avatar */}
-          <div className="flex items-center space-x-6 p-4 bg-secondary/50 rounded-lg">
-            <Avatar className="h-20 w-20">
-              <AvatarImage src={avatarUrl || undefined} alt={fullName || "Avatar"} />
-              <AvatarFallback className="text-lg">
-                {getInitials(fullName)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <h3 className="text-xl font-semibold">{fullName || "Nome não definido"}</h3>
-              <p className="text-sm text-muted-foreground">
-                {avatarUrl ? "Avatar personalizado" : "Avatar com iniciais"}
+    <div className="space-y-6">
+      <Card className="max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Editar Perfil
+          </CardTitle>
+          <CardDescription>
+            Atualize suas informações pessoais
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            {/* Preview do Avatar */}
+            <div className="flex items-center space-x-6 p-4 bg-secondary/50 rounded-lg">
+              <Avatar className="h-20 w-20">
+                <AvatarImage src={avatarUrl || undefined} alt={fullName || "Avatar"} />
+                <AvatarFallback className="text-lg">
+                  {getInitials(fullName)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1">
+                <h3 className="text-xl font-semibold">{fullName || "Nome não definido"}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {avatarUrl ? "Avatar personalizado" : "Avatar com iniciais"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Este é como seu perfil aparecerá no site
+                </p>
+              </div>
+            </div>
+
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="full_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome Completo</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Digite seu nome completo"
+                          {...field}
+                          disabled={isLoading}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="avatar_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>URL do Avatar (opcional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="https://exemplo.com/minha-foto.jpg"
+                          {...field}
+                          disabled={isLoading}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <Button type="submit" disabled={isLoading} className="w-full">
+                  {isLoading ? (
+                    <>
+                      <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Salvar Alterações
+                    </>
+                  )}
+                </Button>
+              </form>
+            </Form>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Seção de Zona Perigosa */}
+      <Card className="max-w-2xl mx-auto border-destructive/50">
+        <CardHeader>
+          <CardTitle>Ações relacionadas à sua conta</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium mb-2">Excluir Conta</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                Esta ação irá excluir permanentemente sua conta do sistema EntrevistAI, todos os seus dados, 
+                histórico de entrevistas e configurações. Esta ação não pode ser desfeita.
               </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Este é como seu perfil aparecerá no site
-              </p>
+              <DeleteAccountButton />
             </div>
           </div>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="full_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome Completo</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Digite seu nome completo"
-                        {...field}
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="avatar_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>URL do Avatar (opcional)</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="https://exemplo.com/minha-foto.jpg"
-                        {...field}
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button type="submit" disabled={isLoading} className="w-full">
-                {isLoading ? (
-                  <>
-                    <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Salvar Alterações
-                  </>
-                )}
-              </Button>
-            </form>
-          </Form>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

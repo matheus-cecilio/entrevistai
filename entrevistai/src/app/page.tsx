@@ -9,10 +9,9 @@ import { InterviewArea } from "@/components/interview/InterviewArea";
 import { UserHeader } from "@/components/user/UserHeader";
 import { LoadingState } from "@/components/ui/loading-state";
 import { AILoading } from "@/components/ui/ai-loading";
+import { WelcomeModal } from "@/components/profile/WelcomeModal";
 import { ProfileFormData, EvaluationResult, InterviewResult, CoreMessage } from "@/types/interview";
 import { LoaderCircle } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { type User as SupabaseUser } from "@supabase/supabase-js";
 import {
   Card,
   CardContent,
@@ -27,6 +26,7 @@ import {
   finishInterviewAction,
 } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 import { useUserProfile } from "@/hooks/use-user-profile";
 
 // --- Tipos e Esquemas em src/types/interview.ts ---
@@ -36,9 +36,8 @@ type AppStep = "profile" | "interview" | "results" | "loading-ai";
 const INTERVIEW_DURATION = 15 * 60; // 15 minutos
 
 function PageContent() {
-  const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const { profile } = useUserProfile(user);
+  const { user, loading: authLoading, initialized } = useAuth();
+  const { profile, loading: profileLoading, isFirstTime, updateProfile } = useUserProfile(user);
 
   const [step, setStep] = useState<AppStep>("profile");
   const [isLoading, setIsLoading] = useState(false);
@@ -62,21 +61,6 @@ function PageContent() {
   const [isGettingGeneralFeedback, setIsGettingGeneralFeedback] = useState(false);
   const [timeLeft, setTimeLeft] = useState(INTERVIEW_DURATION);
   const { toast } = useToast();
-  const supabase = createClient();
-
-  useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (session) {
-        setUser(session.user);
-      }
-      setAuthLoading(false);
-    };
-
-    getUser();
-  }, [supabase.auth]);
 
   useEffect(() => {
     let timerId: NodeJS.Timeout;
@@ -286,6 +270,16 @@ function PageContent() {
     setTimeLeft(INTERVIEW_DURATION);
   };
 
+  const handleWelcomeComplete = (name: string) => {
+    // Atualiza o perfil localmente
+    if (profile) {
+      updateProfile({
+        ...profile,
+        full_name: name,
+      });
+    }
+  };
+
   const renderContent = () => {
     switch (step) {
       case "profile":
@@ -381,7 +375,18 @@ function PageContent() {
     }
   };
 
-  if (authLoading) {
+  if (!initialized) {
+    return (
+      <div className="flex min-h-screen w-full flex-col items-center justify-center p-4">
+        <LoadingState 
+          title="Iniciando EntrevistAI..."
+          message="Carregando sua experiência de entrevista"
+        />
+      </div>
+    );
+  }
+
+  if (authLoading || profileLoading) {
     return (
       <div className="flex min-h-screen w-full flex-col items-center justify-center p-4">
         <LoadingState 
@@ -398,6 +403,15 @@ function PageContent() {
         {user && <UserHeader user={user} />}
         <Card className="shadow-2xl">{renderContent()}</Card>
       </div>
+      
+      {/* Modal de boas-vindas para primeiro acesso */}
+      {user && isFirstTime && !profileLoading && (
+        <WelcomeModal
+          isOpen={isFirstTime}
+          onComplete={handleWelcomeComplete}
+          currentEmail={user.email || ""}
+        />
+      )}
     </main>
   );
 }

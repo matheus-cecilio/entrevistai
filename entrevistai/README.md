@@ -158,7 +158,7 @@ npm run typecheck    # Verifica tipos TypeScript
 
 ```
 src/
-├── app/                 # App Router (Next.js 13+)
+├── app/                # App Router (Next.js 13+)
 │   ├── page.tsx        # Página principal da entrevista
 │   ├── login/          # Autenticação
 │   ├── signup/         # Cadastro

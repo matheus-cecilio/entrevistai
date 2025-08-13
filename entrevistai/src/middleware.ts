@@ -3,24 +3,42 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
-  // console.log removido para produção
-
   const { supabase, response } = createClient(request);
 
-  const {
-    data: { session },
-    error,
-  } = await supabase.auth.getSession();
+  // Otimização: verificar apenas nas rotas protegidas
+  const isProtectedRoute = request.nextUrl.pathname === "/" || 
+                          request.nextUrl.pathname.startsWith("/dashboard") ||
+                          request.nextUrl.pathname.startsWith("/profile");
 
-  // console.log removido para produção
-
-  if (!session && request.nextUrl.pathname === "/") {
-    // console.log removido para produção
-    return NextResponse.redirect(new URL("/login", request.url));
+  if (!isProtectedRoute) {
+    return response;
   }
 
-  // console.log removido para produção
-  return response;
+  try {
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+
+    if (error) {
+      console.error('Middleware auth error:', error);
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    if (!session && request.nextUrl.pathname === "/") {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    if (!session && (request.nextUrl.pathname.startsWith("/dashboard") || 
+                    request.nextUrl.pathname.startsWith("/profile"))) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    return response;
+  } catch (error) {
+    console.error('Middleware error:', error);
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
 }
 
 export const config = {
@@ -34,8 +52,11 @@ export const config = {
      * - login (login page)
      * - signup (signup page)
      * - public folder
+     * - api routes
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|auth|login|signup).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|auth|login|signup|api).*)",
     "/",
+    "/dashboard/:path*",
+    "/profile/:path*",
   ],
 };

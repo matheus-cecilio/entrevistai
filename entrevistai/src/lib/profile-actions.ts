@@ -101,3 +101,53 @@ export async function createProfile(userId: string, initialData?: Partial<Update
     };
   }
 }
+
+/**
+ * Action para atualizar o perfil do usuário atual autenticado
+ */
+export async function updateProfileAction(profileData: UpdateProfileData) {
+  try {
+    // Validar dados de entrada
+    const validatedData = updateProfileSchema.parse(profileData);
+    
+    const supabase = await createClient();
+
+    // Verificar se o usuário está autenticado
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error("Usuário não autenticado");
+    }
+
+    // Preparar dados para atualização
+    const updateData = {
+      full_name: validatedData.full_name,
+      avatar_url: validatedData.avatar_url || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .update(updateData)
+      .eq("id", user.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating profile:", error);
+      return { success: false, error: error.message };
+    }
+
+    // Revalidar as páginas que dependem do perfil
+    revalidatePath("/profile");
+    revalidatePath("/dashboard");
+    revalidatePath("/");
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error in updateProfileAction:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error occurred",
+    };
+  }
+}

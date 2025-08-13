@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  allowedDevOrigins: ['http://127.0.0.1:9002', 'http://localhost:9002', "*.csb.app", "*.cloudworkstations.dev"],
+  allowedDevOrigins: ['http://127.0.0.1', 'http://127.0.0.1:9002', 'http://localhost:9002', "*.csb.app", "*.cloudworkstations.dev"],
 };
 
 export default nextConfig;

@@ -95,3 +95,129 @@ export async function finishInterviewAction(input: FinishInterviewActionInput) {
     return { success: false, error: error.message };
   }
 }
+
+/**
+ * Action para deletar uma entrevista específica do usuário
+ */
+export async function deleteInterviewAction(interviewId: string) {
+  try {
+    const supabase = await createClient();
+
+    // Verificar se o usuário está autenticado
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error("Usuário não autenticado");
+    }
+
+    // Deletar a entrevista (RLS garante que só pode deletar suas próprias entrevistas)
+    const { error: deleteError } = await supabase
+      .from('interviews')
+      .delete()
+      .eq('id', interviewId)
+      .eq('user_id', user.id);
+
+    if (deleteError) {
+      console.error("Supabase Delete Error:", deleteError);
+      throw new Error(`Falha ao deletar entrevista: ${deleteError.message}`);
+    }
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error in deleteInterviewAction:", error);
+    return { 
+      success: false, 
+      error: error.message || "Erro desconhecido ao deletar entrevista" 
+    };
+  }
+}
+
+/**
+ * Action para deletar a conta do usuário e todos os dados associados
+ */
+export async function deleteUserAccountAction() {
+  try {
+    const supabase = await createClient();
+
+    // Verificar se o usuário está autenticado
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error("Usuário não autenticado");
+    }
+
+    const userId = user.id;
+
+    // 1. Deletar todas as entrevistas do usuário (RLS aplicado automaticamente)
+    const { error: interviewsError } = await supabase
+      .from('interviews')
+      .delete()
+      .eq('user_id', userId);
+
+    if (interviewsError) {
+      console.error("Error deleting interviews:", interviewsError);
+      throw new Error(`Falha ao deletar entrevistas: ${interviewsError.message}`);
+    }
+
+    // 2. Deletar o perfil do usuário (RLS aplicado automaticamente)
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
+
+    if (profileError) {
+      console.error("Error deleting profile:", profileError);
+      throw new Error(`Falha ao deletar perfil: ${profileError.message}`);
+    }
+
+    // 3. Tentar deletar o usuário da autenticação usando service role key
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    let warning = null;
+    let message = "Dados deletados com sucesso.";
+
+    if (serviceRoleKey) {
+      try {
+        const deleteUserResponse = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/admin/users/${userId}`,
+          {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${serviceRoleKey}`,
+              'Content-Type': 'application/json',
+              'apikey': serviceRoleKey
+            }
+          }
+        );
+
+        if (!deleteUserResponse.ok) {
+          const errorData = await deleteUserResponse.text();
+          console.error('Error deleting user from auth:', errorData);
+          warning = 'Dados deletados com sucesso, mas não foi possível remover o usuário da autenticação. Faça logout manualmente.';
+        } else {
+          message = 'Conta deletada completamente com sucesso.';
+        }
+        
+      } catch (authError) {
+        console.error('Error in auth deletion:', authError);
+        warning = 'Dados deletados com sucesso, mas houve um problema ao remover o usuário da autenticação.';
+      }
+    } else {
+      // Service role key não está configurada
+      console.warn('SUPABASE_SERVICE_ROLE_KEY not found. Only user data was deleted.');
+      warning = 'Dados deletados com sucesso. Para deletar completamente a conta da autenticação, configure SUPABASE_SERVICE_ROLE_KEY no .env';
+    }
+
+    // 4. Fazer logout do usuário
+    await supabase.auth.signOut();
+
+    return { 
+      success: true, 
+      warning: warning,
+      message: message
+    };
+  } catch (error: any) {
+    console.error("Error in deleteUserAccountAction:", error);
+    return { 
+      success: false, 
+      error: error.message || "Erro desconhecido ao deletar conta" 
+    };
+  }
+}

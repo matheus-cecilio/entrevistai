@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/accordion'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { getProfile } from '@/lib/profile-actions'
+import { DeleteInterviewButton } from '@/components/interview/DeleteInterviewButton'
 import { Suspense } from 'react'
 
 type Interview = {
@@ -178,10 +179,16 @@ export default async function DashboardPage() {
                         ))}
                     </div>
                   </div>
-                   <div className="text-right">
+                  <div className="flex items-start gap-2">
+                    <div className="text-right">
                        <p className="text-sm text-muted-foreground">Pontuação Média</p>
                        <p className={`text-4xl font-bold ${getScoreColorText(interview.average_score)}`}>{interview.average_score}%</p>
                     </div>
+                    <DeleteInterviewButton 
+                      interviewId={interview.id}
+                      jobRole={interview.job_role}
+                    />
+                  </div>
                 </CardHeader>
                 <CardContent className="p-6">
                   <Accordion type="single" collapsible className="w-full">
