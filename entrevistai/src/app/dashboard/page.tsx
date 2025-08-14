@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, BookCheck, Settings, Home } from 'lucide-react'
+import { BookCheck, Settings, Home } from 'lucide-react'
 import Link from 'next/link'
 import {
   Accordion,
@@ -20,7 +20,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { getProfile } from '@/lib/profile-actions'
 import { DeleteInterviewButton } from '@/components/interview/DeleteInterviewButton'
-import { Suspense } from 'react'
+import LocationSection from '@/components/location/LocationSection'
 
 type Interview = {
   id: string
@@ -151,93 +151,103 @@ export default async function DashboardPage() {
           </div>
         </div>
       </header>
-      <main className="container mx-auto max-w-5xl p-4">
+      <main className="container mx-auto max-w-5xl p-4 space-y-8">
+        {/* Seção de Competição Local */}
+        <LocationSection 
+          userId={user.id}
+          initialCity={profile?.city}
+          initialState={profile?.state}
+        />
+        
         {/* Histórico de entrevistas */}
-        {interviews && interviews.length > 0 ? (
-          <div className="grid gap-6">
-            {(interviews as Interview[]).map((interview) => (
-              <Card key={interview.id} className="overflow-hidden">
-                <CardHeader className="flex flex-row items-start justify-between gap-4 border-b bg-muted/30">
-                  <div>
-                    <CardTitle className="text-2xl">{interview.job_role}</CardTitle>
-                    <CardDescription className="mt-1">
-                      Realizada em:{' '}
-                      {new Date(interview.created_at).toLocaleDateString(
-                        'pt-BR',
-                        {
-                          day: '2-digit',
-                          month: 'long',
-                          year: 'numeric',
-                        }
-                      )}
-                    </CardDescription>
-                     <div className="mt-2 flex flex-wrap gap-2">
-                        {(typeof interview.professional_area === 'string' && interview.professional_area.trim() !== ''
-                          ? interview.professional_area.split(',')
-                          : []).map(area => (
-                            <Badge key={area.trim()} variant="secondary">{area.trim()}</Badge>
-                        ))}
+        <div>
+          <h2 className="text-2xl font-bold mb-4">Histórico de Entrevistas</h2>
+          {interviews && interviews.length > 0 ? (
+            <div className="grid gap-6">
+              {(interviews as Interview[]).map((interview) => (
+                <Card key={interview.id} className="overflow-hidden">
+                  <CardHeader className="flex flex-row items-start justify-between gap-4 border-b bg-muted/30">
+                    <div>
+                      <CardTitle className="text-2xl">{interview.job_role}</CardTitle>
+                      <CardDescription className="mt-1">
+                        Realizada em:{' '}
+                        {new Date(interview.created_at).toLocaleDateString(
+                          'pt-BR',
+                          {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric',
+                          }
+                        )}
+                      </CardDescription>
+                       <div className="mt-2 flex flex-wrap gap-2">
+                          {(typeof interview.professional_area === 'string' && interview.professional_area.trim() !== ''
+                            ? interview.professional_area.split(',')
+                            : []).map(area => (
+                              <Badge key={area.trim()} variant="secondary">{area.trim()}</Badge>
+                          ))}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="text-right">
-                       <p className="text-sm text-muted-foreground">Pontuação Média</p>
-                       <p className={`text-4xl font-bold ${getScoreColorText(interview.average_score)}`}>{interview.average_score}%</p>
+                    <div className="flex items-start gap-2">
+                      <div className="text-right">
+                         <p className="text-sm text-muted-foreground">Pontuação Média</p>
+                         <p className={`text-4xl font-bold ${getScoreColorText(interview.average_score)}`}>{interview.average_score}%</p>
+                      </div>
+                      <DeleteInterviewButton 
+                        interviewId={interview.id}
+                        jobRole={interview.job_role}
+                      />
                     </div>
-                    <DeleteInterviewButton 
-                      interviewId={interview.id}
-                      jobRole={interview.job_role}
-                    />
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <Accordion type="single" collapsible className="w-full">
-                     <AccordionItem value="overall">
-                        <AccordionTrigger className="text-lg font-semibold">Feedback Geral</AccordionTrigger>
-            <AccordionContent className="pt-2 text-base text-muted-foreground whitespace-pre-line leading-relaxed">
-              {formatOverallFeedback(interview.overall_feedback)}
-                        </AccordionContent>
-                     </AccordionItem>
-                     <AccordionItem value="details">
-                        <AccordionTrigger className="text-lg font-semibold">Detalhes por Questão</AccordionTrigger>
-                        <AccordionContent className="pt-2">
-                             <Accordion type="multiple" className="w-full space-y-2">
-                               {interview.results.map((result, index) => (
-                                   <AccordionItem value={`q-${index}`} key={index} className="rounded-md border bg-secondary/50 px-4">
-                                       <AccordionTrigger>
-                                        <div className="flex w-full items-center justify-between pr-4">
-                                            <span className="flex-1 text-left font-medium">Q{index+1}: {result.question}</span>
-                                            <Badge className={getScoreColor(result.evaluation.score)}>{result.evaluation.score}%</Badge>
-                                        </div>
-                                       </AccordionTrigger>
-                                       <AccordionContent className="space-y-4 pt-2">
-                                            <div>
-                                                <h4 className="font-semibold text-foreground">Sua resposta:</h4>
-                                                <blockquote className="mt-1 border-l-2 pl-4 italic text-muted-foreground">"{result.answer}"</blockquote>
-                                            </div>
-                                             <div>
-                                                <h4 className="font-semibold text-foreground">Feedback da IA:</h4>
-                                                <p className="mt-1 text-muted-foreground">{result.evaluation.feedback}</p>
-                                            </div>
-                                       </AccordionContent>
-                                   </AccordionItem>
-                               ))}
-                           </Accordion>
-                        </AccordionContent>
-                     </AccordionItem>
-                  </Accordion>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="mt-20 text-center">
-            <h2 className="text-2xl font-semibold">Nenhuma entrevista encontrada.</h2>
-            <p className="mt-2 text-muted-foreground">
-              Complete sua primeira entrevista para vê-la aqui.
-            </p>
-          </div>
-        )}
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <Accordion type="single" collapsible className="w-full">
+                       <AccordionItem value="overall">
+                          <AccordionTrigger className="text-lg font-semibold">Feedback Geral</AccordionTrigger>
+              <AccordionContent className="pt-2 text-base text-muted-foreground whitespace-pre-line leading-relaxed">
+                {formatOverallFeedback(interview.overall_feedback)}
+                          </AccordionContent>
+                       </AccordionItem>
+                       <AccordionItem value="details">
+                          <AccordionTrigger className="text-lg font-semibold">Detalhes por Questão</AccordionTrigger>
+                          <AccordionContent className="pt-2">
+                               <Accordion type="multiple" className="w-full space-y-2">
+                                 {interview.results.map((result, index) => (
+                                     <AccordionItem value={`q-${index}`} key={index} className="rounded-md border bg-secondary/50 px-4">
+                                         <AccordionTrigger>
+                                          <div className="flex w-full items-center justify-between pr-4">
+                                              <span className="flex-1 text-left font-medium">Q{index+1}: {result.question}</span>
+                                              <Badge className={getScoreColor(result.evaluation.score)}>{result.evaluation.score}%</Badge>
+                                          </div>
+                                         </AccordionTrigger>
+                                         <AccordionContent className="space-y-4 pt-2">
+                                              <div>
+                                                  <h4 className="font-semibold text-foreground">Sua resposta:</h4>
+                                                  <blockquote className="mt-1 border-l-2 pl-4 italic text-muted-foreground">&ldquo;{result.answer}&rdquo;</blockquote>
+                                              </div>
+                                               <div>
+                                                  <h4 className="font-semibold text-foreground">Feedback da IA:</h4>
+                                                  <p className="mt-1 text-muted-foreground">{result.evaluation.feedback}</p>
+                                              </div>
+                                         </AccordionContent>
+                                     </AccordionItem>
+                                 ))}
+                             </Accordion>
+                          </AccordionContent>
+                       </AccordionItem>
+                    </Accordion>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-20 text-center">
+              <h2 className="text-2xl font-semibold">Nenhuma entrevista encontrada.</h2>
+              <p className="mt-2 text-muted-foreground">
+                Complete sua primeira entrevista para vê-la aqui.
+              </p>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   )

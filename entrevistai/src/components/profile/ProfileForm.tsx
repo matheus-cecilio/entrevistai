@@ -94,7 +94,7 @@ export function ProfileForm({ profile, userId }: ProfileFormProps) {
               <Avatar className="h-20 w-20">
                 <AvatarImage src={avatarUrl || undefined} alt={fullName || "Avatar"} />
                 <AvatarFallback className="text-lg">
-                  {getInitials(fullName)}
+                  {getInitials(fullName || "")}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">

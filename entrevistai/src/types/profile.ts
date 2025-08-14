@@ -4,12 +4,16 @@ export const profileSchema = z.object({
   id: z.string().uuid(),
   full_name: z.string().nullable(),
   avatar_url: z.string().url().nullable(),
+  city: z.string().nullable(),
+  state: z.string().nullable(),
   updated_at: z.string(),
 });
 
 export const updateProfileSchema = z.object({
-  full_name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres").max(50, "Nome muito longo"),
+  full_name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres").max(50, "Nome muito longo").optional(),
   avatar_url: z.string().url("URL inválida").optional().or(z.literal("")),
+  city: z.string().min(2, "Cidade deve ter pelo menos 2 caracteres").max(100, "Nome da cidade muito longo").optional(),
+  state: z.string().min(2, "Estado deve ter pelo menos 2 caracteres").max(50, "Nome do estado muito longo").optional(),
 });
 
 export type Profile = z.infer<typeof profileSchema>;

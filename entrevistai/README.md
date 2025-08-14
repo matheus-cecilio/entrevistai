@@ -90,6 +90,8 @@ CREATE TABLE profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name TEXT,
   avatar_url TEXT,
+  city TEXT, -- Cidade do usuário para ranking
+  state TEXT, -- Estado do usuário
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -100,6 +102,8 @@ CREATE TABLE interviews (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   job_role TEXT NOT NULL,
   professional_area TEXT NOT NULL,
+  city TEXT, -- Cidade do usuário para ranking regional
+  state TEXT, -- Estado para estatísticas regionais
   results JSONB NOT NULL,
   overall_feedback TEXT NOT NULL,
   average_score INTEGER NOT NULL
