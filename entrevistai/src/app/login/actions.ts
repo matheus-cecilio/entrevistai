@@ -83,10 +83,24 @@ export async function signup(formData: FormData) {
 
 export async function loginWithProvider(provider: 'google' | 'github') {
     const supabase = await createClient();
+    // Try to build origin from headers when available; fallback to env
+    let origin = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:9002';
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { headers } = await import('next/headers');
+      const hdrs = await headers();
+      const proto = hdrs.get('x-forwarded-proto');
+      const host = hdrs.get('x-forwarded-host') || hdrs.get('host');
+      if (host) {
+        origin = `${proto || 'https'}://${host}`;
+      }
+    } catch {
+      // ignore; use env fallback
+    }
     const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-            redirectTo: `${new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:9002').origin}/auth/callback`
+            redirectTo: `${new URL(origin).origin}/auth/callback`
         }
     });
 

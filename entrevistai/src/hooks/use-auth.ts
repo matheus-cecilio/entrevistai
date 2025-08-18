@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from 'react'
-import { AuthChangeEvent, Session, type User as SupabaseUser } from '@supabase/supabase-js'
-import { createClient } from '@/lib/supabase/client'
+import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { type User as SupabaseUser, type AuthChangeEvent, type Session } from "@supabase/supabase-js";
 
-export function useAuth() {
-  const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
+export function useAuth(initialUser: SupabaseUser | null = null) {
+  const [user, setUser] = useState<SupabaseUser | null>(initialUser);
+  const [loading, setLoading] = useState(!initialUser);
+  const [initialized, setInitialized] = useState(!!initialUser);
 
   useEffect(() => {
     const supabase = createClient();
@@ -15,13 +15,19 @@ export function useAuth() {
     // Função otimizada para verificar autenticação
     const checkAuth = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Auth error:', error);
-          setUser(null);
+        // Primeiro, autentica de fato consultando o servidor de auth
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (!userError && user) {
+          setUser(user);
         } else {
-          setUser(session?.user ?? null);
+          // Fallback: tenta obter da sessão local
+          const { data: { session }, error } = await supabase.auth.getSession();
+          if (error) {
+            console.error('Auth error:', error);
+            setUser(null);
+          } else {
+            setUser(session?.user ?? null);
+          }
         }
       } catch (error) {
         console.error('Error checking auth:', error);
@@ -32,15 +38,22 @@ export function useAuth() {
       }
     };
 
-    // Verificar imediatamente
-    checkAuth();
+  // Verificar imediatamente (ainda que haja initialUser, garantimos validade da sessão)
+  checkAuth();
 
     // Listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event: AuthChangeEvent, session: Session | null) => {
-        setUser(session?.user ?? null);
-        setLoading(false);
-        setInitialized(true);
+      async (_event: AuthChangeEvent, _session: Session | null) => {
+        // Revalida com getUser para garantir estado confiável
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          setUser(user ?? null);
+        } catch {
+          setUser(null);
+        } finally {
+          setLoading(false);
+          setInitialized(true);
+        }
       }
     );
 

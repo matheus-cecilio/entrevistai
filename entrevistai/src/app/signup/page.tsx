@@ -5,14 +5,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 import { useOptimizedNavigation } from "@/hooks/use-optimized-navigation";
+import { useFormStatus } from "react-dom";
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" variant="default" className="mt-4 w-full" disabled={pending}>
+      {pending ? "Criando conta..." : "Cadastrar-se"}
+    </Button>
+  );
+}
 
 function SignupForm() {
   const searchParams = useSearchParams();
   const encodedMessage = searchParams?.get("message");
   const message = encodedMessage ? decodeURIComponent(encodedMessage) : null;
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { preloadRoute } = useOptimizedNavigation();
 
   // Preload da página de login
@@ -20,15 +29,6 @@ function SignupForm() {
     preloadRoute('/login');
   };
 
-  const handleSubmit = async (formData: FormData) => {
-    setIsSubmitting(true);
-    try {
-      await signup(formData);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-background">
       <div className="w-full max-w-sm rounded-lg border border-border bg-card p-8 shadow-lg">
@@ -38,7 +38,7 @@ function SignupForm() {
             Comece sua jornada no EntrevistAI.
           </p>
         </div>
-        <form action={handleSubmit} className="flex w-full flex-1 flex-col justify-center gap-2 text-foreground">
+        <form action={signup} className="flex w-full flex-1 flex-col justify-center gap-2 text-foreground">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -46,7 +46,6 @@ function SignupForm() {
               name="email"
               placeholder="you@example.com"
               required
-              disabled={isSubmitting}
             />
           </div>
           <div className="space-y-2">
@@ -57,18 +56,9 @@ function SignupForm() {
               name="password"
               placeholder="••••••••"
               required
-              disabled={isSubmitting}
             />
           </div>
-
-          <Button 
-            type="submit" 
-            variant="default" 
-            className="mt-4 w-full"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Criando conta..." : "Cadastrar-se"}
-          </Button>
+          <SubmitButton />
 
           {message && (
             <div className={`mt-4 p-4 rounded-md text-center text-sm ${

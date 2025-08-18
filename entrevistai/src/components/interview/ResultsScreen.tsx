@@ -86,7 +86,7 @@ export const ResultsScreen = ({ results, onRestart, overallFeedback }: ResultsSc
                   <h4 className="font-semibold text-muted-foreground">
                     Sua resposta:
                   </h4>
-                  <p className="italic">"{result.answer}"</p>
+                  <p className="italic">&ldquo;{result.answer}&rdquo;</p>
                 </div>
                 <div>
                   <h4 className="font-semibold text-muted-foreground">

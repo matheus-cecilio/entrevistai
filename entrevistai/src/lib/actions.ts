@@ -90,9 +90,10 @@ export async function finishInterviewAction(input: FinishInterviewActionInput) {
     }
 
     return { success: true, data: aiResult };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in finishInterviewAction:", error);
-    return { success: false, error: error.message };
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { success: false, error: message };
   }
 }
 
@@ -122,11 +123,11 @@ export async function deleteInterviewAction(interviewId: string) {
     }
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in deleteInterviewAction:", error);
     return { 
       success: false, 
-      error: error.message || "Erro desconhecido ao deletar entrevista" 
+      error: error instanceof Error ? (error.message || "Erro desconhecido ao deletar entrevista") : "Erro desconhecido ao deletar entrevista" 
     };
   }
 }
@@ -213,11 +214,11 @@ export async function deleteUserAccountAction() {
       warning: warning,
       message: message
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in deleteUserAccountAction:", error);
     return { 
       success: false, 
-      error: error.message || "Erro desconhecido ao deletar conta" 
+      error: error instanceof Error ? (error.message || "Erro desconhecido ao deletar conta") : "Erro desconhecido ao deletar conta" 
     };
   }
 }

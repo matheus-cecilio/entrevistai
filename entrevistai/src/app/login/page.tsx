@@ -6,28 +6,28 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 import { useOptimizedNavigation } from "@/hooks/use-optimized-navigation";
+import { useFormStatus } from "react-dom";
+
+function SubmitButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" variant="default" className="w-full" disabled={pending}>
+      {pending ? "Entrando..." : "Entrar"}
+    </Button>
+  );
+}
 
 function LoginForm() {
   const searchParams = useSearchParams();
   const encodedMessage = searchParams?.get("message");
   const message = encodedMessage ? decodeURIComponent(encodedMessage) : null;
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const { preloadRoute } = useOptimizedNavigation();
 
   // Preload da página de signup
   const handlePreload = () => {
     preloadRoute('/signup');
-  };
-
-  const handleSubmit = async (formData: FormData) => {
-    setIsSubmitting(true);
-    try {
-      await login(formData);
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   return (
@@ -38,7 +38,7 @@ function LoginForm() {
           <p className="text-muted-foreground">Acesse sua conta para começar</p>
         </div>
 
-        <form action={handleSubmit} className="flex w-full flex-1 flex-col justify-center gap-4 text-foreground">
+        <form action={login} className="flex w-full flex-1 flex-col justify-center gap-4 text-foreground">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -46,7 +46,6 @@ function LoginForm() {
               name="email"
               placeholder="you@example.com"
               required
-              disabled={isSubmitting}
             />
           </div>
           <div className="space-y-2">
@@ -57,17 +56,9 @@ function LoginForm() {
               name="password"
               placeholder="••••••••"
               required
-              disabled={isSubmitting}
             />
           </div>
-          <Button 
-            type="submit" 
-            variant="default" 
-            className="w-full"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Entrando..." : "Entrar"}
-          </Button>
+          <SubmitButton />
           {message && (
             <div className={`mt-4 p-3 rounded-md text-center text-sm ${
               message.includes('criada') || message.includes('Verifique seu email') 
