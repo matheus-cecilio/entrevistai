@@ -5,3 +5,6 @@ module.exports = {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
 };
+
+
+testando o vs code - push
