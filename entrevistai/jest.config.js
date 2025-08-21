@@ -5,4 +5,3 @@ module.exports = {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
 };
-acsfssf;
