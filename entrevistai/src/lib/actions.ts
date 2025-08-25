@@ -22,10 +22,26 @@ export async function startInterviewAction(input: StartInterviewInput) {
     return { success: true, data: output };
   } catch (error) {
     console.error("Error starting interview:", error);
+    
+    // Verificar se é erro de serviço indisponível
+    if (error instanceof Error && error.message.includes("Service Unavailable")) {
+      return {
+        success: false,
+        error: "O serviço de IA está temporariamente indisponível. Tente novamente em alguns minutos."
+      };
+    }
+    
+    // Verificar se é erro de API
+    if (error instanceof Error && error.message.includes("Failed after")) {
+      return {
+        success: false,
+        error: "Falha na conexão com o serviço de IA. Verifique sua conexão e tente novamente."
+      };
+    }
+    
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "An unknown error occurred.",
+      error: error instanceof Error ? error.message : "Erro desconhecido. Tente novamente."
     };
   }
 }
@@ -39,10 +55,26 @@ export async function submitAnswerAction(input: ContinueInterviewInput) {
     return { success: true, data: output };
   } catch (error) {
     console.error("Error submitting answer:", error);
+    
+    // Verificar se é erro de serviço indisponível
+    if (error instanceof Error && error.message.includes("Service Unavailable")) {
+      return {
+        success: false,
+        error: "O serviço de IA está temporariamente indisponível. Tente novamente em alguns minutos."
+      };
+    }
+    
+    // Verificar se é erro de API
+    if (error instanceof Error && error.message.includes("Failed after")) {
+      return {
+        success: false,
+        error: "Falha na conexão com o serviço de IA. Verifique sua conexão e tente novamente."
+      };
+    }
+    
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "An unknown error occurred.",
+      error: error instanceof Error ? error.message : "Erro desconhecido. Tente novamente."
     };
   }
 }
@@ -67,8 +99,18 @@ export async function finishInterviewAction(input: FinishInterviewActionInput) {
       conversationHistory: input.conversationHistory,
     });
 
-    // 2. Calcular a pontuação média
-    const totalScore = input.finalResults.reduce((sum, r) => sum + r.evaluation.score, 0);
+    // 2. Calcular a pontuação média baseada nos ratings
+    const getRatingScore = (rating: string): number => {
+      switch (rating) {
+        case "Excelente": return 100;
+        case "Bom": return 75;
+        case "Insuficiente": return 40;
+        case "Resposta Inválida": return 0;
+        default: return 0;
+      }
+    };
+
+    const totalScore = input.finalResults.reduce((sum, r) => sum + getRatingScore(r.evaluation.rating), 0);
     const averageScore = input.finalResults.length > 0 ? Math.round(totalScore / input.finalResults.length) : 0;
 
     // 3. Preparar os dados para salvar no Supabase

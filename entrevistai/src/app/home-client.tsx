@@ -8,7 +8,7 @@ import { LoadingState } from "@/components/ui/loading-state";
 import { AILoading } from "@/components/ui/ai-loading";
 import { WelcomeModal } from "@/components/profile/WelcomeModal";
 import { ProfileFormData, EvaluationResult, InterviewResult, CoreMessage } from "@/types/interview";
-import { LoaderCircle } from "lucide-react";
+import { LoaderCircle, CheckCircle, AlertCircle, XCircle, Star } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -42,6 +42,44 @@ export default function HomeClient({ initialUser }: { initialUser: SupabaseUser 
   const [timeLeft, setTimeLeft] = useState(INTERVIEW_DURATION);
   const { toast } = useToast();
 
+  // Função para configurar rating visual
+  const getRatingConfig = (rating: EvaluationResult["rating"]) => {
+    switch (rating) {
+      case "Excelente":
+        return {
+          icon: Star,
+          color: "text-green-600",
+          bgColor: "bg-green-900/20 border-green-600/30",
+          textColor: "text-green-400",
+          cardBg: "bg-green-950/30 border-green-600/30"
+        };
+      case "Bom":
+        return {
+          icon: CheckCircle,
+          color: "text-blue-600",
+          bgColor: "bg-blue-900/20 border-blue-600/30",
+          textColor: "text-blue-400",
+          cardBg: "bg-blue-950/30 border-blue-600/30"
+        };
+      case "Insuficiente":
+        return {
+          icon: AlertCircle,
+          color: "text-orange-600",
+          bgColor: "bg-orange-900/20 border-orange-600/30",
+          textColor: "text-orange-400",
+          cardBg: "bg-orange-950/30 border-orange-600/30"
+        };
+      case "Resposta Inválida":
+        return {
+          icon: XCircle,
+          color: "text-red-600",
+          bgColor: "bg-red-900/20 border-red-600/30",
+          textColor: "text-red-400",
+          cardBg: "bg-red-950/30 border-red-600/30"
+        };
+    }
+  };
+
   useEffect(() => {
     let timerId: NodeJS.Timeout;
     if (step === "interview" && timeLeft > 0) {
@@ -68,16 +106,18 @@ export default function HomeClient({ initialUser }: { initialUser: SupabaseUser 
         setStep("profile");
         toast({
           variant: "destructive",
-          title: "Erro ao iniciar entrevista",
-          description: result.error || "Tente novamente mais tarde ou revise os dados informados.",
+          title: "Serviço Temporariamente Indisponível",
+          description: result.error || "Tente novamente em alguns minutos.",
+          duration: 8000, // Mostra por mais tempo
         });
       }
     } catch (error) {
       setStep("profile");
       toast({
         variant: "destructive",
-        title: "Erro inesperado",
-        description: "Falha na comunicação com a IA. Tente novamente.",
+        title: "Erro de Conexão",
+        description: "Falha na comunicação com a IA. Verifique sua internet e tente novamente.",
+        duration: 8000,
       });
     } finally {
       setIsLoading(false);
@@ -98,11 +138,11 @@ export default function HomeClient({ initialUser }: { initialUser: SupabaseUser 
       conversationHistory: finalHistory,
     });
 
-    let evaluation: EvaluationResult = { feedback: "", score: 0 };
+    let evaluation: EvaluationResult = { feedback: "", rating: "Insuficiente" };
     if (result.success && result.data) {
       evaluation = {
         feedback: result.data.feedback ?? "",
-        score: result.data.score ?? 0,
+        rating: result.data.rating ?? "Insuficiente",
       };
     } else {
       toast({
@@ -134,7 +174,7 @@ export default function HomeClient({ initialUser }: { initialUser: SupabaseUser 
       {
         question: currentQuestion,
         answer: currentAnswer,
-        evaluation: finalEvaluation || { feedback: "", score: 0 },
+        evaluation: finalEvaluation || { feedback: "", rating: "Insuficiente" },
       },
     ];
     const result = await finishInterviewAction({
@@ -178,11 +218,11 @@ export default function HomeClient({ initialUser }: { initialUser: SupabaseUser 
           answer: currentAnswer,
           evaluation: {
             feedback: result.data.feedback ?? "",
-            score: result.data.score ?? 0,
+            rating: result.data.rating ?? "Insuficiente",
           },
         },
       ]);
-      setLastEvaluation({ feedback: result.data.feedback ?? "", score: result.data.score ?? 0 });
+      setLastEvaluation({ feedback: result.data.feedback ?? "", rating: result.data.rating ?? "Insuficiente" });
       setConversationHistory(updatedHistory);
 
       if (!result.data.question || interviewResults.length >= 3) {
@@ -191,7 +231,12 @@ export default function HomeClient({ initialUser }: { initialUser: SupabaseUser 
         setCurrentQuestion(result.data.question);
       }
     } else {
-      toast({ variant: "destructive", title: "Erro ao enviar resposta", description: result.error || "Tente novamente." });
+      toast({
+        variant: "destructive",
+        title: "Erro na Comunicação",
+        description: result.error || "Falha ao processar sua resposta. Tente novamente.",
+        duration: 6000,
+      });
     }
     setIsLoading(false);
   };
@@ -254,20 +299,22 @@ export default function HomeClient({ initialUser }: { initialUser: SupabaseUser 
         );
       case "results":
         if (!showGeneralFeedback && finalEvaluation) {
+          const config = getRatingConfig(finalEvaluation.rating);
+          const IconComponent = config.icon;
+
           return (
-            <Card className="border-primary bg-primary/5 max-w-xl mx-auto mt-8">
+            <Card className={`${config.cardBg} border-2 max-w-xl mx-auto mt-8`}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <span>Feedback da 5ª Questão</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <div className="flex justify-between mb-1">
-                    <span className="font-semibold">Score</span>
-                    <span className="font-bold text-primary">{finalEvaluation.score} / 100</span>
-                  </div>
-                  <Progress value={finalEvaluation.score} className="h-3 [&>div]:bg-primary" />
+                <div className={`flex items-center gap-2 p-3 rounded-lg ${config.bgColor}`}>
+                  <IconComponent className={`${config.color} h-5 w-5`} />
+                  <span className={`font-semibold ${config.textColor}`}>
+                    {finalEvaluation.rating}
+                  </span>
                 </div>
                 <p className="text-muted-foreground">{finalEvaluation.feedback}</p>
                 {isGettingGeneralFeedback && (

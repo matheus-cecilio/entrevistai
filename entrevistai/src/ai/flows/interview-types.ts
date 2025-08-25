@@ -27,8 +27,7 @@ export type ContinueInterviewInput = z.infer<
 export const InterviewOutputSchema = z.object({
   question: z.string(),
   feedback: z.string().nullable(),
-  score: z.number().nullable(),
-  isFinalQuestion: z.boolean(),
+  rating: z.enum(["Resposta Inválida", "Insuficiente", "Bom", "Excelente"]).nullable(),
 });
 export type InterviewOutput = z.infer<typeof InterviewOutputSchema>;
 
@@ -36,7 +35,7 @@ export type InterviewOutput = z.infer<typeof InterviewOutputSchema>;
 export const FinalOutputSchema = z.object({
   lastEvaluation: z.object({
     feedback: z.string(),
-    score: z.number(),
+    rating: z.enum(["Resposta Inválida", "Insuficiente", "Bom", "Excelente"]),
   }),
   overallFeedback: z.string(),
 });

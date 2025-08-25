@@ -15,10 +15,10 @@
 ## ✨ Características
 
 - 🤖 **IA Conversacional**: Entrevistas conduzidas por IA com perguntas contextuais
-- 📊 **Feedback Detalhado**: Avaliação individual para cada resposta (0-100 pontos)
+- 📊 **Feedback Detalhado**: Avaliação qualitativa para cada resposta (Excelente/Bom/Insuficiente/Resposta Inválida)
 - 📈 **Acompanhamento de Progresso**: Dashboard com histórico completo de entrevistas
 - � **Gerenciamento de Perfil**: Edite suas informações pessoais e avatar
-- �🔐 **Autenticação Segura**: Login via email/senha ou OAuth (Google/GitHub)
+- �🔐 **Autenticação Segura**: Login via email/senha
 - 📱 **Interface Responsiva**: Design moderno que funciona em todos os dispositivos
 - ⏱️ **Limite de Tempo**: Simula pressão real de entrevista com timer de 15 minutos
 
@@ -167,7 +167,7 @@ src/
 │   ├── login/          # Autenticação
 │   ├── signup/         # Cadastro
 │   ├── profile/        # Gerenciamento de perfil
-│   ├── dashboard/      # Histórico de entrevistas
+│   ├── history/        # Histórico de entrevistas
 │   └── auth/callback/  # Callback OAuth
 ├── components/
 │   ├── interview/      # Componentes específicos da entrevista

@@ -14,6 +14,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+import { CheckCircle, AlertCircle, XCircle, Star } from "lucide-react"
 import { getProfile } from '@/lib/profile-actions'
 import { DeleteInterviewButton } from '@/components/interview/DeleteInterviewButton'
 
@@ -28,7 +29,7 @@ type Interview = {
     question: string
     answer: string
     evaluation: {
-      score: number
+      rating: "Resposta Inválida" | "Insuficiente" | "Bom" | "Excelente"
       feedback: string
     }
   }[]
@@ -62,6 +63,35 @@ export default async function HistoryPage() {
       </div>
     )
   }
+
+  const getRatingConfig = (rating: "Resposta Inválida" | "Insuficiente" | "Bom" | "Excelente") => {
+    switch (rating) {
+      case "Excelente":
+        return {
+          icon: Star,
+          badgeClass: "bg-green-100 text-green-800 border-green-200",
+          textClass: "text-green-500"
+        };
+      case "Bom":
+        return {
+          icon: CheckCircle,
+          badgeClass: "bg-blue-100 text-blue-800 border-blue-200",
+          textClass: "text-blue-500"
+        };
+      case "Insuficiente":
+        return {
+          icon: AlertCircle,
+          badgeClass: "bg-orange-100 text-orange-800 border-orange-200",
+          textClass: "text-orange-500"
+        };
+      case "Resposta Inválida":
+        return {
+          icon: XCircle,
+          badgeClass: "bg-red-100 text-red-800 border-red-200",
+          textClass: "text-red-500"
+        };
+    }
+  };
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return "bg-green-100 text-green-800 border-green-200";
@@ -140,12 +170,19 @@ export default async function HistoryPage() {
                         <AccordionTrigger className="text-lg font-semibold">Detalhes por Questão</AccordionTrigger>
                         <AccordionContent className="pt-2">
                              <Accordion type="multiple" className="w-full space-y-2">
-                               {interview.results.map((result, index) => (
+                               {interview.results.map((result, index) => {
+                                 const config = getRatingConfig(result.evaluation.rating);
+                                 const IconComponent = config.icon;
+                                 
+                                 return (
                                    <AccordionItem value={`q-${index}`} key={index} className="rounded-md border bg-secondary/50 px-4">
                                        <AccordionTrigger>
                                         <div className="flex w-full items-center justify-between pr-4">
                                             <span className="flex-1 text-left font-medium">Q{index+1}: {result.question}</span>
-                                            <Badge className={getScoreColor(result.evaluation.score)}>{result.evaluation.score}%</Badge>
+                                            <Badge className={config.badgeClass}>
+                                              <IconComponent className="h-3 w-3 mr-1" />
+                                              {result.evaluation.rating}
+                                            </Badge>
                                         </div>
                                        </AccordionTrigger>
                                        <AccordionContent className="space-y-4 pt-2">
@@ -159,7 +196,8 @@ export default async function HistoryPage() {
                                             </div>
                                        </AccordionContent>
                                    </AccordionItem>
-                               ))}
+                                 );
+                               })}
                            </Accordion>
                         </AccordionContent>
                      </AccordionItem>

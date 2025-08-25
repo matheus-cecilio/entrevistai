@@ -32,7 +32,7 @@ export async function startInterview(
   Sua tarefa é gerar APENAS um objeto JSON contendo a primeira pergunta da entrevista, seja conciso fazendo uma pergunta que são frequentes em entrevistas dessa área.
   A pergunta DEVE estar em Português do Brasil.
   NÃO inclua nenhum texto introdutório, markdown, ou qualquer coisa fora do objeto JSON.
-  O objeto JSON deve seguir estritamente este formato: { "question": "Sua pergunta aqui em português", "feedback": null, "score": null, "isFinalQuestion": false }.
+  O objeto JSON deve seguir estritamente este formato: { "question": "Sua pergunta aqui em português", "feedback": null, "rating": null }.
   Esta é a primeira de um total de 5 perguntas.`;
 
   const result = await generateText({
@@ -68,13 +68,18 @@ export async function continueInterview(
 O usuário acabou de responder sua última pergunta.
 Sua tarefa é gerar APENAS um objeto JSON com o próximo passo da entrevista. O conteúdo do JSON (feedback e a nova pergunta) DEVE estar em Português do Brasil.
 NÃO inclua nenhum texto fora do objeto JSON.
-O JSON deve seguir estritamente este formato: { "question": string, "feedback": string, "score": number, "isFinalQuestion": boolean }.
+O JSON deve seguir estritamente este formato: { "question": string, "feedback": string, "rating": string }.
 
 Instruções para os valores do JSON:
 1. "feedback": Forneça um feedback conciso e construtivo em português sobre a última resposta do usuário.
-2. "score": Atribua uma nota de 0 a 100 para essa resposta.
-3. "question": Elabore a próxima pergunta relevante da entrevista, variando o tema em relação às perguntas anteriores, evitando repetições. Foque em perguntas frequentes em entrevistas para empresas grandes e boas, mas sem ser muito específico. Seja conciso, como um entrevistador experiente, e escreva em português.
-4. "isFinalQuestion": Apenas defina este valor como 'false'. A lógica de finalização será controlada pelo aplicativo.`;
+2. "rating": Avalie a resposta considerando apenas o que foi perguntado. Use EXATAMENTE um destes valores:
+   - "Resposta Inválida": apenas para respostas completamente fora do contexto ou sem sentido
+   - "Insuficiente": para respostas incorretas, muito vagas ou "não sei"
+   - "Bom": para respostas corretas, claras e que atendem ao que foi perguntado
+   - "Excelente": para respostas muito detalhadas, com exemplos práticos ou insights adicionais relevantes
+   
+   IMPORTANTE: Não penalize respostas corretas e diretas. Se a resposta atende ao que foi perguntado de forma precisa, deve ser pelo menos "Bom".
+3. "question": Elabore a próxima pergunta relevante da entrevista, variando o tema em relação às perguntas anteriores, evitando repetições. Foque em perguntas frequentes em entrevistas para empresas grandes e boas, mas sem ser muito específico. Seja conciso, como um entrevistador experiente, e escreva em português.`;
 
   const history: CoreMessage[] = input.conversationHistory.map((turn) => ({
     role: turn.role,
@@ -110,10 +115,18 @@ export async function endInterview(
   input: ContinueInterviewInput
 ): Promise<FinalOutput> {
   const lastAnswerPrompt = `Você é um entrevistador especialista. O usuário acabou de dar sua resposta final para uma vaga de ${input.jobRole} (área de atuação: ${input.professionalArea}).
-Sua tarefa é gerar APENAS um objeto JSON com o feedback e a nota para esta última resposta.
+Sua tarefa é gerar APENAS um objeto JSON com o feedback e a avaliação para esta última resposta.
 O conteúdo do JSON (feedback) DEVE estar em Português do Brasil.
 NÃO inclua nenhum texto fora do objeto JSON.
-O JSON deve seguir estritamente este formato: { "feedback": string, "score": number }.`;
+O JSON deve seguir estritamente este formato: { "feedback": string, "rating": string }.
+
+Para "rating", avalie considerando apenas o que foi perguntado:
+- "Resposta Inválida": apenas para respostas completamente fora do contexto
+- "Insuficiente": para respostas incorretas, muito vagas ou "não sei"
+- "Bom": para respostas corretas e claras que atendem ao perguntado
+- "Excelente": para respostas muito detalhadas com exemplos ou insights extras
+
+IMPORTANTE: Não penalize respostas corretas e diretas.`;
 
   const overallFeedbackPrompt = `Você é um analisador e avaliador de carreira especialista. O usuário acabou de completar uma entrevista simulada para ${input.jobRole} (área de atuação: ${input.professionalArea}).
 Analise o histórico completo da conversa e forneça um feedback geral, construtivo e encorajador em Português do Brasil.
@@ -131,7 +144,7 @@ O JSON deve seguir estritamente este formato: { "summary": "Seu parágrafo de fe
       lastAnswerResult.text.match(/{[\s\S]*}/)?.[0] || lastAnswerResult.text;
     const lastEvaluation = JSON.parse(lastAnswerJsonString) as {
       feedback: string;
-      score: number;
+      rating: "Resposta Inválida" | "Insuficiente" | "Bom" | "Excelente";
     };
 
     const overallFeedbackResult = await generateText({
@@ -150,7 +163,7 @@ O JSON deve seguir estritamente este formato: { "summary": "Seu parágrafo de fe
     const finalOutput: FinalOutput = {
       lastEvaluation: {
         feedback: lastEvaluation.feedback,
-        score: lastEvaluation.score,
+        rating: lastEvaluation.rating,
       },
       overallFeedback: overallFeedback.summary,
     };

@@ -8,7 +8,7 @@ export type ProfileFormData = z.infer<typeof esquemaPerfil>;
 
 export type EvaluationResult = {
   feedback: string;
-  score: number;
+  rating: "Resposta Inválida" | "Insuficiente" | "Bom" | "Excelente";
 };
 
 export type InterviewResult = {
