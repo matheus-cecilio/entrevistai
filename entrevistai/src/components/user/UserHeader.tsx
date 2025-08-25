@@ -10,7 +10,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LayoutDashboard, Settings, LogOut, ChevronDown } from "lucide-react";
+import { LayoutDashboard, Settings, LogOut, ChevronDown, Home } from "lucide-react";
 import Link from "next/link";
 import { logout } from "@/app/login/actions";
 import { useUserProfile } from "@/hooks/use-user-profile";
@@ -28,7 +28,7 @@ export function UserHeader({ user }: UserHeaderProps) {
 
   // Preload das rotas mais acessadas
   useEffect(() => {
-    preloadRoute("/dashboard");
+    preloadRoute("/history");
     preloadRoute("/profile");
   }, [preloadRoute]);
 
@@ -62,12 +62,12 @@ export function UserHeader({ user }: UserHeaderProps) {
       </div>
       
       <div className="flex items-center gap-2">
-        <Link href="/dashboard" prefetch={true}>
-          <Button variant="ghost" size="sm">
-            <LayoutDashboard className="mr-2 h-4 w-4" />
-            Histórico
+          <Button asChild variant="outline">
+            <Link href="/" prefetch={true}>
+              <Home className="mr-2 h-4 w-4" />
+              Início
+            </Link>
           </Button>
-        </Link>
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -80,7 +80,7 @@ export function UserHeader({ user }: UserHeaderProps) {
             <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/dashboard" className="w-full cursor-pointer" prefetch={true}>
+              <Link href="/history" className="w-full cursor-pointer" prefetch={true}>
                 <LayoutDashboard className="mr-2 h-4 w-4" />
                 <span>Histórico</span>
               </Link>

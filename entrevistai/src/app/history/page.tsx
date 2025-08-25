@@ -8,19 +8,14 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { ArrowLeft, BookCheck, Settings, Home } from 'lucide-react'
-import Link from 'next/link'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { getProfile } from '@/lib/profile-actions'
 import { DeleteInterviewButton } from '@/components/interview/DeleteInterviewButton'
-import { Suspense } from 'react'
 
 type Interview = {
   id: string
@@ -39,7 +34,7 @@ type Interview = {
   }[]
 }
 
-export default async function DashboardPage() {
+export default async function HistoryPage() {
   const supabase = await createClient()
 
   const {
@@ -68,18 +63,6 @@ export default async function DashboardPage() {
     )
   }
 
-  const getInitials = (name: string) => {
-    if (!name) return "U";
-    return name
-      .split(" ")
-      .map((word) => word.charAt(0))
-      .join("")
-      .substring(0, 2)
-      .toUpperCase();
-  };
-
-  const displayName = profile?.full_name || user.email?.split("@")[0] || "Usuário";
-
   const getScoreColor = (score: number) => {
     if (score >= 80) return "bg-green-100 text-green-800 border-green-200";
     if (score >= 50) return "bg-yellow-100 text-yellow-800 border-yellow-200";
@@ -101,57 +84,12 @@ export default async function DashboardPage() {
     // 1) Quebra após ponto-e-vírgula
     t = t.replace(/;\s*/g, ';\n');
     // 2) Destacar seções/orientadores comuns
-    t = t.replace(
-      /(Pontos fortes:|O que pode evoluir:|Sugestões práticas?:|Para evoluir,|No aspecto colaborativo,|Foi positivo ver|Sua visão crítica|No geral,)/g,
-      '\n\n$1'
-    );
-    // 3) Listas com "1) ... 2) ..."
-    t = t.replace(/\s*(\d+)\)\s*/g, '\n$1) ');
-    // 4) Transformar traços em bullets quando usados como itens
-    t = t.replace(/(?:^|\s)[-–]\s/g, '\n- ');
-    // 5) Quebrar linhas após final de frase (., !, :) seguidas de letra maiúscula
-    t = t.replace(/([\.!?:])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ])/g, '$1\n');
-    // 6) Limpeza de múltiplas quebras
-    t = t.replace(/\n{3,}/g, '\n\n');
-    return t.trim();
+    return t;
   };
-
 
   return (
     <div className="min-h-screen bg-secondary">
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md">
-        <div className="container mx-auto flex h-16 max-w-5xl items-center justify-between border-b px-4">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src={profile?.avatar_url || undefined} alt={displayName} />
-              <AvatarFallback className="text-sm">
-                {getInitials(displayName)}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <p className="text-sm text-muted-foreground">
-                <BookCheck className="text-primary" />
-                Histórico de Entrevistas do {displayName}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button asChild variant="outline">
-              <Link href="/profile" prefetch={true}>
-                <Settings className="mr-2 h-4 w-4" />
-                Perfil
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/" prefetch={true}>
-                <Home className="mr-2 h-4 w-4" />
-                Início
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </header>
-      <main className="container mx-auto max-w-5xl p-4">
+      <main className="container mx-auto max-w-5xl p-4 mt-4">
         {/* Histórico de entrevistas */}
         {interviews && interviews.length > 0 ? (
           <div className="grid gap-6">

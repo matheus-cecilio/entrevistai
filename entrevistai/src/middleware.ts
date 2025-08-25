@@ -7,7 +7,7 @@ export async function middleware(request: NextRequest) {
 
   // Otimização: verificar apenas nas rotas protegidas
   const isProtectedRoute = request.nextUrl.pathname === "/" || 
-                          request.nextUrl.pathname.startsWith("/dashboard") ||
+                          request.nextUrl.pathname.startsWith("/history") ||
                           request.nextUrl.pathname.startsWith("/profile");
 
   if (!isProtectedRoute) {
@@ -29,7 +29,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    if (!session && (request.nextUrl.pathname.startsWith("/dashboard") || 
+    if (!session && (request.nextUrl.pathname.startsWith("/history") || 
                     request.nextUrl.pathname.startsWith("/profile"))) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
@@ -56,7 +56,7 @@ export const config = {
      */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$|auth|login|signup|api).*)",
     "/",
-    "/dashboard/:path*",
+    "/history/:path*",
     "/profile/:path*",
   ],
 };

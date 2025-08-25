@@ -1,6 +1,6 @@
 import { LoadingState } from "@/components/ui/loading-state";
 
-export default function DashboardLoading() {
+export default function HistoryLoading() {
   return (
     <div className="min-h-screen bg-secondary">
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md">

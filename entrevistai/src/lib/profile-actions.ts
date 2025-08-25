@@ -57,7 +57,7 @@ export async function updateProfile(userId: string, profileData: UpdateProfileDa
 
     // Revalidar as páginas que dependem do perfil
     revalidatePath("/profile");
-    revalidatePath("/dashboard");
+    revalidatePath("/history");
     revalidatePath("/");
 
     return { success: true, data };
@@ -139,7 +139,7 @@ export async function updateProfileAction(profileData: UpdateProfileData) {
 
     // Revalidar as páginas que dependem do perfil
     revalidatePath("/profile");
-    revalidatePath("/dashboard");
+    revalidatePath("/history");
     revalidatePath("/");
 
     return { success: true, data };

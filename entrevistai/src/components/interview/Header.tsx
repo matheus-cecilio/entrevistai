@@ -12,7 +12,7 @@ export const Header = ({ user }: { user: SupabaseUser }) => (
       <span className="font-semibold text-foreground">{user.email}</span>
     </div>
     <div className="flex items-center gap-2">
-      <Link href="/dashboard">
+      <Link href="/history">
         <Button variant="ghost" size="sm">
           <LayoutDashboard className="mr-2 h-4 w-4" />
           Histórico
@@ -28,7 +28,7 @@ export const Header = ({ user }: { user: SupabaseUser }) => (
           <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
-            <Link href="/dashboard" className="w-full cursor-pointer">
+            <Link href="/history" className="w-full cursor-pointer">
               <LayoutDashboard className="mr-2 h-4 w-4" />
               <span>Histórico</span>
             </Link>

@@ -1,7 +1,5 @@
 "use client";
 
-// Moved interactive home page logic into a client component that accepts initialUser
-
 import { useState, useEffect, Suspense } from "react";
 import { ResultsScreen } from "@/components/interview/ResultsScreen";
 import { ProfileSetup } from "@/components/interview/ProfileSetup";
