@@ -13,3 +13,4 @@ build/
 .vercel/
 .vscode/
 /tsconfig.tsbuildinfo
+.devcontainer
