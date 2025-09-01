@@ -75,8 +75,8 @@ Instruções para os valores do JSON:
 2. "rating": Avalie a resposta considerando apenas o que foi perguntado. Use EXATAMENTE um destes valores:
    - "Resposta Inválida": apenas para respostas completamente fora do contexto ou sem sentido
    - "Insuficiente": para respostas incorretas, muito vagas ou "não sei"
-   - "Bom": para respostas corretas, claras e que atendem ao que foi perguntado
-   - "Excelente": para respostas muito detalhadas, com exemplos práticos ou insights adicionais relevantes
+   - "Bom": para respostas corretas e que atendem ao que foi perguntado
+   - "Excelente": para respostas detalhadas e claras, com exemplos ou insights adicionais relevantes
    
    IMPORTANTE: Não penalize respostas corretas e diretas. Se a resposta atende ao que foi perguntado de forma precisa, deve ser pelo menos "Bom".
 3. "question": Elabore a próxima pergunta relevante da entrevista, variando o tema em relação às perguntas anteriores, evitando repetições. Foque em perguntas frequentes em entrevistas para empresas grandes e boas, mas sem ser muito específico. Seja conciso, como um entrevistador experiente, e escreva em português.`;

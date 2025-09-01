@@ -14,6 +14,7 @@ import { LoaderCircle, Save, User } from "lucide-react";
 import { updateProfileSchema, type UpdateProfileData, type Profile } from "@/types/profile";
 import { updateProfile } from "@/lib/profile-actions";
 import { DeleteAccountButton } from "@/components/profile/DeleteAccountButton";
+import { ChangePasswordButton } from "@/components/profile/ChangePasswordButton";
 import { Separator } from "@/components/ui/separator";
 
 interface ProfileFormProps {
@@ -165,10 +166,16 @@ export function ProfileForm({ profile, userId }: ProfileFormProps) {
         </CardContent>
       </Card>
 
+      {/* Seção de Segurança */}
+      <ChangePasswordButton />
+
       {/* Seção de Zona Perigosa */}
       <Card className="max-w-2xl mx-auto border-destructive/50">
         <CardHeader>
-          <CardTitle>Ações relacionadas à sua conta</CardTitle>
+          <CardTitle>Zona Perigosa</CardTitle>
+          <CardDescription>
+            Ações irreversíveis relacionadas à sua conta
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">

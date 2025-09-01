@@ -19,7 +19,7 @@ export function useUserProfile(user: SupabaseUser | null) {
         .from("profiles")
         .select("*")
         .eq("id", userId)
-        .maybeSingle(); // Use maybeSingle em vez de single para evitar erro se não existir
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') { // PGRST116 = row not found
         console.error("Error fetching profile:", error);

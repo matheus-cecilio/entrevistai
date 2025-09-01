@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { updateProfileSchema, type UpdateProfileData } from "@/types/profile";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 
 export async function getProfile(userId: string) {
   try {
@@ -149,5 +150,41 @@ export async function updateProfileAction(profileData: UpdateProfileData) {
       success: false,
       error: error instanceof Error ? error.message : "Unknown error occurred",
     };
+  }
+}
+
+/**
+ * Action para solicitar alteração de senha por email
+ */
+export async function requestPasswordChange() {
+  try {
+    const supabase = await createClient();
+
+    // Verificar se o usuário está autenticado
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return { success: false, error: "Usuário não autenticado." };
+    }
+
+    // Construir URL de redirecionamento
+    const headersList = await headers();
+    const host = headersList.get('host') || 'localhost:9002';
+    const protocol = headersList.get('x-forwarded-proto') || 'http';
+    const redirectTo = `${protocol}://${host}/reset-password`;
+
+    // Solicitar reset de senha para o usuário atual
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email!, {
+      redirectTo,
+    });
+
+    if (error) {
+      console.error('Password change request error:', error);
+      return { success: false, error: 'Erro ao enviar email de alteração. Tente novamente.' };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Unexpected error in requestPasswordChange:', error);
+    return { success: false, error: 'Erro inesperado. Tente novamente.' };
   }
 }

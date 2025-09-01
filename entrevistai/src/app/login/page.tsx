@@ -57,6 +57,15 @@ function LoginForm() {
               placeholder="••••••••"
               required
             />
+            <div className="text-right">
+              <Link
+                href="/forgot-password"
+                className="text-sm text-muted-foreground hover:text-primary hover:underline"
+                prefetch={true}
+              >
+                Esqueceu a senha?
+              </Link>
+            </div>
           </div>
           <SubmitButton />
           {message && (
