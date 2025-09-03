@@ -7,18 +7,18 @@ import { InterviewArea } from "@/components/interview/InterviewArea";
 import { LoadingState } from "@/components/ui/loading-state";
 import { AILoading } from "@/components/ui/ai-loading";
 import { WelcomeModal } from "@/components/profile/WelcomeModal";
-import { ProfileFormData, EvaluationResult, InterviewResult, CoreMessage } from "@/types/interview";
+import { ProfileFormData, EvaluationResult, PresentationEvaluation, InterviewResult, CoreMessage } from "@/types/interview";
 import { LoaderCircle, CheckCircle, AlertCircle, XCircle, Star } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { startInterviewAction, submitAnswerAction, finishInterviewAction } from "@/lib/actions";
+import { startPresentationAction, startInterviewAction, submitAnswerAction, finishInterviewWithPresentationAction } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserProfile } from "@/hooks/use-user-profile";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
-type AppStep = "profile" | "interview" | "results" | "loading-ai";
+type AppStep = "profile" | "presentation" | "interview" | "results" | "loading-ai";
 const INTERVIEW_DURATION = 15 * 60; // 15 minutos
 
 export default function HomeClient({ initialUser }: { initialUser: SupabaseUser | null }) {
@@ -29,16 +29,25 @@ export default function HomeClient({ initialUser }: { initialUser: SupabaseUser 
   const [isLoading, setIsLoading] = useState(false);
   const [jobDetails, setJobDetails] = useState<ProfileFormData | null>(null);
 
+  // Estados da apresentação
+  const [presentationQuestion, setPresentationQuestion] = useState("");
+  const [presentationAnswer, setPresentationAnswer] = useState("");
+
+  // Estados da entrevista
   const [currentQuestion, setCurrentQuestion] = useState("");
   const [currentAnswer, setCurrentAnswer] = useState("");
   const [conversationHistory, setConversationHistory] = useState<CoreMessage[]>([]);
   const [lastEvaluation, setLastEvaluation] = useState<EvaluationResult | null>(null);
   const [interviewResults, setInterviewResults] = useState<InterviewResult[]>([]);
   const [isFinalQuestion, setIsFinalQuestion] = useState(false);
+  
+  // Estados do resultado
   const [overallFeedback, setOverallFeedback] = useState<string | null>(null);
+  const [presentationEvaluation, setPresentationEvaluation] = useState<PresentationEvaluation | null>(null);
   const [showGeneralFeedback, setShowGeneralFeedback] = useState(false);
   const [finalEvaluation, setFinalEvaluation] = useState<EvaluationResult | null>(null);
   const [isGettingGeneralFeedback, setIsGettingGeneralFeedback] = useState(false);
+  
   const [timeLeft, setTimeLeft] = useState(INTERVIEW_DURATION);
   const { toast } = useToast();
 
@@ -82,9 +91,9 @@ export default function HomeClient({ initialUser }: { initialUser: SupabaseUser 
 
   useEffect(() => {
     let timerId: NodeJS.Timeout;
-    if (step === "interview" && timeLeft > 0) {
+    if ((step === "presentation" || step === "interview") && timeLeft > 0) {
       timerId = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
-    } else if (timeLeft <= 0 && step === "interview") {
+    } else if (timeLeft <= 0 && (step === "presentation" || step === "interview")) {
       setStep("results");
     }
     return () => clearInterval(timerId);
@@ -95,12 +104,11 @@ export default function HomeClient({ initialUser }: { initialUser: SupabaseUser 
     setJobDetails(data);
     setStep("loading-ai");
     try {
-      const result = await startInterviewAction(data);
+      const result = await startPresentationAction(data);
       if (result.success && result.data) {
-        const firstQuestion = result.data.question;
-        setCurrentQuestion(firstQuestion);
-        setConversationHistory([{ role: "assistant", content: firstQuestion }]);
-        setStep("interview");
+        const presentationQ = result.data.question;
+        setPresentationQuestion(presentationQ);
+        setStep("presentation");
         setTimeLeft(INTERVIEW_DURATION);
       } else {
         setStep("profile");
@@ -113,6 +121,40 @@ export default function HomeClient({ initialUser }: { initialUser: SupabaseUser 
       }
     } catch (error) {
       setStep("profile");
+      toast({
+        variant: "destructive",
+        title: "Erro de Conexão",
+        description: "Falha na comunicação com a IA. Verifique sua internet e tente novamente.",
+        duration: 8000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStartInterviewAfterPresentation = async () => {
+    if (!jobDetails || !presentationAnswer.trim()) return;
+    setIsLoading(true);
+    setStep("loading-ai");
+    
+    try {
+      const result = await startInterviewAction(jobDetails);
+      if (result.success && result.data) {
+        const firstQuestion = result.data.question;
+        setCurrentQuestion(firstQuestion);
+        setConversationHistory([{ role: "assistant", content: firstQuestion }]);
+        setStep("interview");
+      } else {
+        setStep("presentation");
+        toast({
+          variant: "destructive",
+          title: "Serviço Temporariamente Indisponível",
+          description: result.error || "Tente novamente em alguns minutos.",
+          duration: 8000,
+        });
+      }
+    } catch (error) {
+      setStep("presentation");
       toast({
         variant: "destructive",
         title: "Erro de Conexão",
@@ -177,14 +219,16 @@ export default function HomeClient({ initialUser }: { initialUser: SupabaseUser 
         evaluation: finalEvaluation || { feedback: "", rating: "Insuficiente" },
       },
     ];
-    const result = await finishInterviewAction({
+    const result = await finishInterviewWithPresentationAction({
       ...jobDetails,
       conversationHistory: finalHistory,
       finalResults: finalResultsWithLastAnswer,
+      presentationAnswer,
       userId: user.id,
     });
     if (result.success && result.data) {
       setOverallFeedback(result.data.overallFeedback);
+      setPresentationEvaluation(result.data.presentationEvaluation);
       setShowGeneralFeedback(true);
     } else {
       toast({
@@ -282,6 +326,66 @@ export default function HomeClient({ initialUser }: { initialUser: SupabaseUser 
       }
       case "loading-ai":
         return <AILoading message="Preparando sua entrevista personalizada..." estimatedTime={8} />;
+      case "presentation":
+        return (
+          <div className="min-h-screen bg-secondary">
+            <div className="container mx-auto max-w-4xl p-4">
+              {/* Timer */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span>Tempo restante: {Math.floor(timeLeft / 60)}:{(timeLeft % 60).toString().padStart(2, '0')}</span>
+                  <span>Apresentação</span>
+                </div>
+                <Progress value={(1 - timeLeft / INTERVIEW_DURATION) * 100} className="mt-2" />
+              </div>
+
+              {/* Pergunta de Apresentação */}
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold">
+                      0
+                    </div>
+                    Apresentação
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-lg mb-4">{presentationQuestion}</p>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <p className="text-sm text-blue-800 font-medium mb-2">💡 Dica: Em sua resposta, procure abordar:</p>
+                    <ul className="text-sm text-blue-700 space-y-1">
+                      <li>• Sua formação ou como iniciou na carreira</li>
+                      <li>• Experiência atual na área e tecnologias que domina</li>
+                      <li>• Principais atividades, conquistas ou projetos</li>
+                      <li>• Objetivo na empresa ou o que busca na área</li>
+                    </ul>
+                  </div>
+                  <textarea
+                    value={presentationAnswer}
+                    onChange={(e) => setPresentationAnswer(e.target.value)}
+                    placeholder="Digite sua apresentação aqui... (1-2 minutos)"
+                    className="w-full h-32 p-3 border border-input rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                    disabled={isLoading}
+                  />
+                  <Button
+                    onClick={handleStartInterviewAfterPresentation}
+                    disabled={!presentationAnswer.trim() || isLoading}
+                    className="w-full mt-4"
+                  >
+                    {isLoading ? (
+                      <>
+                        <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                        Iniciando Entrevista...
+                      </>
+                    ) : (
+                      "Iniciar Entrevista"
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        );
       case "interview":
         return (
           <InterviewArea
@@ -341,7 +445,7 @@ export default function HomeClient({ initialUser }: { initialUser: SupabaseUser 
             </Card>
           );
         }
-        return <ResultsScreen results={interviewResults} onRestart={handleRestart} overallFeedback={overallFeedback} />;
+        return <ResultsScreen results={interviewResults} onRestart={handleRestart} overallFeedback={overallFeedback} presentationEvaluation={presentationEvaluation} />;
       default:
         return null;
     }

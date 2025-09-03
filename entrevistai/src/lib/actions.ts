@@ -4,14 +4,17 @@
 import { createClient } from "@/lib/supabase/server";
 import {
   startInterview,
+  startPresentation,
   continueInterview,
   endInterview,
+  endInterviewWithPresentation,
 } from "@/ai/flows/interview-flow";
 import {
   type StartInterviewInput,
+  type StartPresentationInput,
   type ContinueInterviewInput,
 } from "@/ai/flows/interview-types";
-import { type InterviewResult } from "@/types/interview";
+import { type InterviewResult, type PresentationEvaluation } from "@/types/interview";
 
 /**
  * Action para iniciar a entrevista e obter a primeira pergunta.
@@ -22,6 +25,39 @@ export async function startInterviewAction(input: StartInterviewInput) {
     return { success: true, data: output };
   } catch (error) {
     console.error("Error starting interview:", error);
+    
+    // Verificar se é erro de serviço indisponível
+    if (error instanceof Error && error.message.includes("Service Unavailable")) {
+      return {
+        success: false,
+        error: "O serviço de IA está temporariamente indisponível. Tente novamente em alguns minutos."
+      };
+    }
+    
+    // Verificar se é erro de API
+    if (error instanceof Error && error.message.includes("Failed after")) {
+      return {
+        success: false,
+        error: "Falha na conexão com o serviço de IA. Verifique sua conexão e tente novamente."
+      };
+    }
+    
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Erro desconhecido. Tente novamente."
+    };
+  }
+}
+
+/**
+ * Action para iniciar a pergunta de apresentação (Pergunta 0).
+ */
+export async function startPresentationAction(input: StartPresentationInput) {
+  try {
+    const output = await startPresentation(input);
+    return { success: true, data: output };
+  } catch (error) {
+    console.error("Error starting presentation:", error);
     
     // Verificar se é erro de serviço indisponível
     if (error instanceof Error && error.message.includes("Service Unavailable")) {
@@ -88,6 +124,16 @@ interface FinishInterviewActionInput {
   userId: string;
 }
 
+// Interface para o input da action final com apresentação
+interface FinishInterviewWithPresentationActionInput {
+  jobRole: string;
+  professionalArea: string;
+  conversationHistory: ContinueInterviewInput['conversationHistory'];
+  finalResults: InterviewResult[]; // Array com os resultados completos
+  presentationAnswer: string; // Resposta da apresentação
+  userId: string;
+}
+
 export async function finishInterviewAction(input: FinishInterviewActionInput) {
   try {
     const supabase = await createClient();
@@ -134,6 +180,62 @@ export async function finishInterviewAction(input: FinishInterviewActionInput) {
     return { success: true, data: aiResult };
   } catch (error: unknown) {
     console.error("Error in finishInterviewAction:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Action para finalizar entrevista com avaliação da apresentação.
+ */
+export async function finishInterviewWithPresentationAction(input: FinishInterviewWithPresentationActionInput) {
+  try {
+    const supabase = await createClient();
+
+    // 1. Obter o feedback final, avaliação da última resposta e da apresentação
+    const aiResult = await endInterviewWithPresentation({
+      jobRole: input.jobRole,
+      professionalArea: input.professionalArea,
+      conversationHistory: input.conversationHistory,
+    }, input.presentationAnswer);
+
+    // 2. Calcular a pontuação média baseada nos ratings (apenas perguntas técnicas/comportamentais)
+    const getRatingScore = (rating: string): number => {
+      switch (rating) {
+        case "Excelente": return 100;
+        case "Bom": return 75;
+        case "Insuficiente": return 40;
+        case "Resposta Inválida": return 0;
+        default: return 0;
+      }
+    };
+
+    const totalScore = input.finalResults.reduce((sum, r) => sum + getRatingScore(r.evaluation.rating), 0);
+    const averageScore = input.finalResults.length > 0 ? Math.round(totalScore / input.finalResults.length) : 0;
+
+    // 3. Preparar os dados para salvar no Supabase (incluindo avaliação da apresentação)
+    const interviewData = {
+      user_id: input.userId,
+      job_role: input.jobRole,
+      professional_area: input.professionalArea,
+      results: input.finalResults, // Salva o JSON completo com P/R, feedback e scores das perguntas técnicas
+      presentation_answer: input.presentationAnswer, // Salva a resposta da apresentação
+      presentation_evaluation: aiResult.presentationEvaluation, // Salva a avaliação da apresentação
+      overall_feedback: aiResult.overallFeedback,
+      average_score: averageScore, // Pontuação apenas das perguntas técnicas/comportamentais
+    };
+    
+    // 4. Inserir no banco de dados
+    const { error: dbError } = await supabase.from('interviews').insert([interviewData]);
+
+    if (dbError) {
+      console.error("Supabase DB Error:", dbError);
+      throw new Error(`Failed to save interview to database: ${dbError.message}`);
+    }
+
+    return { success: true, data: aiResult };
+  } catch (error: unknown) {
+    console.error("Error in finishInterviewWithPresentationAction:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
     return { success: false, error: message };
   }

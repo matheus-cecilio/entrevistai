@@ -2,18 +2,19 @@ import { useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { RotateCw, CheckCircle2, XCircle, Sparkles, CheckCircle, AlertCircle, Star } from "lucide-react";
+import { RotateCw, CheckCircle2, XCircle, Sparkles, CheckCircle, AlertCircle, Star, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
-import type { InterviewResult } from "@/types/interview";
+import type { InterviewResult, PresentationEvaluation } from "@/types/interview";
 
 interface ResultsScreenProps {
   results: InterviewResult[];
   onRestart: () => void;
   overallFeedback: string | null;
+  presentationEvaluation?: PresentationEvaluation | null;
 }
 
-export const ResultsScreen = ({ results, onRestart, overallFeedback }: ResultsScreenProps) => {
+export const ResultsScreen = ({ results, onRestart, overallFeedback, presentationEvaluation }: ResultsScreenProps) => {
   // Função para converter rating em score numérico para cálculo da média
   const getRatingScore = (rating: string): number => {
     switch (rating) {
@@ -106,6 +107,64 @@ export const ResultsScreen = ({ results, onRestart, overallFeedback }: ResultsSc
               {overallFeedback}
             </CardDescription>
           </Card>
+        </CardContent>
+      )}
+
+      {/* Seção de Apresentação */}
+      {presentationEvaluation && (
+        <CardContent className="space-y-4">
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold text-primary flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Apresentação Pessoal
+            </h3>
+            
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Formação</span>
+                    <div className="flex items-center">
+                      {presentationEvaluation.formation ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-500" />
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Experiência/Tecnologias</span>
+                    <div className="flex items-center">
+                      {presentationEvaluation.experience ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-500" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Objetivo</span>
+                    <div className="flex items-center">
+                      {presentationEvaluation.objective ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-500" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>            {presentationEvaluation.feedback && (
+              <div className="bg-muted p-4 rounded-lg">
+                <h4 className="font-semibold text-muted-foreground mb-2">
+                  Feedback da Apresentação:
+                </h4>
+                <p className="text-sm">{presentationEvaluation.feedback}</p>
+              </div>
+            )}
+          </div>
         </CardContent>
       )}
 

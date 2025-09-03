@@ -8,7 +8,7 @@
   <img src="https://img.shields.io/badge/OpenRouter-FF6B6B?style=for-the-badge&logo=openai&logoColor=white" alt="OpenRouter" />
 </div>
 
-<br />
+<br/>
 
 **EntrevistAI** é uma plataforma inteligente que simula entrevistas técnicas usando IA avançada. Pratique suas habilidades de entrevista com feedback personalizado e acompanhe seu progresso ao longo do tempo.
 
@@ -16,6 +16,7 @@
 
 - 🤖 **IA Conversacional**: Entrevistas conduzidas por IA com perguntas contextuais
 - 📊 **Feedback Detalhado**: Avaliação individual para cada resposta (0-100 pontos)
+- 🎯 **Avaliação de Apresentação**: Análise específica da pergunta "Fale sobre você" com 4 critérios essenciais
 - 📈 **Acompanhamento de Progresso**: Dashboard com histórico completo de entrevistas
 - 👤 **Gerenciamento de Perfil**: Edite suas informações pessoais e avatar
 - 🗑️ **Controle Total dos Dados**: Exclua entrevistas individuais ou sua conta completa
@@ -29,11 +30,12 @@
 ### Fluxo da Aplicação
 
 1. **Setup do Perfil** → Informe sua função profissional e área de atuação
-2. **Entrevista Interativa** → 5 perguntas progressivas com timer
-3. **Avaliação Detalhada** → Pontuação e feedback construtivo para cada resposta
-4. **Feedback Geral** → Análise completa do desempenho pela IA
-5. **Histórico** → Acompanhe sua evolução ao longo do tempo
-6. **Gerenciamento** → Exclua entrevistas específicas ou delete sua conta completa quando necessário
+2. **Apresentação** → Pergunta inicial "Fale sobre você" abordando 4 pontos essenciais
+3. **Entrevista Interativa** → 5 perguntas progressivas com timer
+4. **Avaliação Detalhada** → Pontuação e feedback construtivo para cada resposta
+5. **Feedback Geral** → Análise completa do desempenho com avaliação separada da apresentação
+6. **Histórico** → Acompanhe sua evolução ao longo do tempo
+7. **Gerenciamento** → Exclua entrevistas específicas ou delete sua conta completa quando necessário
 
 ## 🛠️ Stack Tecnológica
 
@@ -112,9 +114,11 @@ CREATE TABLE interviews (
   professional_area TEXT NOT NULL,
   city TEXT, -- Cidade do usuário para ranking regional
   state TEXT, -- Estado para estatísticas regionais
-  results JSONB NOT NULL,
+  results JSONB NOT NULL, -- Perguntas técnicas/comportamentais com respostas e avaliações
+  presentation_answer TEXT, -- Resposta da pergunta de apresentação
+  presentation_evaluation JSONB, -- Avaliação da apresentação (4 critérios + feedback)
   overall_feedback TEXT NOT NULL,
-  average_score INTEGER NOT NULL
+  average_score INTEGER NOT NULL -- Pontuação média (apenas perguntas técnicas/comportamentais)
 );
 
 -- Habilitar RLS (Row Level Security)
@@ -146,6 +150,8 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 ```
+
+> **⚠️ Para projetos existentes**: Se você já tem um banco configurado, execute apenas o arquivo `database-migration-presentation.sql` para adicionar as novas colunas da funcionalidade de apresentação.
 
 ### 4. Instale Dependências e Execute o projeto
 ```bash
@@ -284,9 +290,11 @@ O EntrevistAI foi desenvolvido com foco na privacidade e controle do usuário so
 - `professional_area`: Área de atuação
 - `city`: Cidade do usuário no momento da entrevista
 - `state`: Estado do usuário no momento da entrevista
-- `results`: JSON com perguntas, respostas e avaliações
+- `results`: JSON com perguntas técnicas/comportamentais, respostas e avaliações
+- `presentation_answer`: Resposta da pergunta de apresentação
+- `presentation_evaluation`: JSON com avaliação dos 4 critérios da apresentação
 - `overall_feedback`: Feedback geral da IA
-- `average_score`: Pontuação média
+- `average_score`: Pontuação média (apenas perguntas técnicas/comportamentais)
 
 ### Funcionalidades de Exclusão
 
